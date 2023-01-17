@@ -186,6 +186,9 @@ const Realtime = db.define(
     wake_status: {
       type: Sequelize.INTEGER,
     },
+    diff_vcell: {
+      type: Sequelize.JSON,
+    },
     createdAt: {
       type: Sequelize.DATE(3),
       allowNull: false,
