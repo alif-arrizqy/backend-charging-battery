@@ -1,10 +1,10 @@
 import db from "../config/dataBase.js";
 
 export const getTableDataAll = async (req, res) => {
-  const frame_name = res.req.body.sn_frame;
-  const frame_select = '"' + frame_name + '"';
+  const frame_sn = res.req.body.sn_frame;
+  const frame_select = '"' + frame_sn + '"';
 
-  console.log("frame_name1 = " + frame_select);
+  console.log("frame_sn = " + frame_select);
   try {
     const result = await db.query("SELECT * FROM " + frame_select + "", {
       type: db.QueryTypes.SELECT,
@@ -16,10 +16,10 @@ export const getTableDataAll = async (req, res) => {
 };
 
 export const getTableDataById = async (req, res) => {
-  const frame_name = res.req.body.sn_frame;
-  const frame_select = '"' + frame_name + '"';
+  const frame_sn = res.req.body.sn_frame;
+  const frame_select = '"' + frame_sn + '"';
 
-  console.log("frame_name1 = " + frame_select);
+  console.log("frame_sn = " + frame_select);
   try {
     const result = await db.query(
       "SELECT * FROM " +

@@ -13,14 +13,14 @@ import db from "../config/dataBase.js";
 // };
 
 export const createTable = async (req, res) => {
-  const frame_name = res.req.body.frame_sn;
+  const frame_sn = res.req.body.frame_sn;
 
   try {
     const { DataTypes } = Sequelize;
     const table_create = db.define(
-      frame_name,
+      frame_sn,
       {
-        frame_name: {
+        frame_sn: {
           type: Sequelize.STRING,
         },
         bid: {

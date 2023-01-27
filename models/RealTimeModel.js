@@ -6,7 +6,7 @@ const { DataTypes } = Sequelize;
 const Realtime = db.define(
   "realtime",
   {
-    frame_name: {
+    frame_sn: {
       type: Sequelize.STRING,
     },
     bid: {

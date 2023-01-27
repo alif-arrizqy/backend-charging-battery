@@ -34,6 +34,10 @@ const M_frame = db.define(
       type: Sequelize.BOOLEAN,
       unique: false,
     },
+    result: {
+      type: Sequelize.STRING,
+      unique: false,
+    },
     createdAt: {
       type: Sequelize.DATE(3),
       allowNull: false,
@@ -53,5 +57,5 @@ const M_frame = db.define(
 export default M_frame;
 
 (async () => {
-  await db.sync();
+  await db.sync({ alter: true });
 })();
