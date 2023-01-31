@@ -96,3 +96,24 @@ export const setFrameCMS = async (req, res) => {
       });
     });
 };
+
+export const restartCMS = async (req, res) => {
+  axios({
+    method: "post",
+    url: `${env.BASE_URL}/restart-cms`,
+    data: req.body,
+    timeout: 2000,
+  })
+    .then((response) => {
+      res.status(200).json({
+        status: true,
+        data: response.data,
+      });
+    })
+    .catch((error) => {
+      res.status(500).json({
+        status: false,
+        message: error.message,
+      });
+    });
+};
