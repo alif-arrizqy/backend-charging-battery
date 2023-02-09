@@ -3,22 +3,6 @@ import db from "../config/dataBase.js";
 
 const { DataTypes } = Sequelize;
 
-// const M_frame = db.define(
-//   "m_frame",
-//   {
-//     // id: DataTypes.INTEGER,
-//     // kd_site: DataTypes.STRING,
-//     frame_sn: DataTypes.STRING,
-//     status_test: DataTypes.BOOLEAN,
-//     // ip_adrs: DataTypes.STRING,
-//     // created_at: DataTypes.datetime,
-//     // updated_at: DataTypes.datetime,
-//   },
-//   {
-//     freezeTabaleName: true,
-//   }
-// );
-
 const M_frame = db.define(
   "m_frame",
   {
@@ -56,6 +40,6 @@ const M_frame = db.define(
 
 export default M_frame;
 
-(async () => {
-  await db.sync({ alter: true });
-})();
+// (async () => {
+//   await db.sync({ alter: true });
+// })();
