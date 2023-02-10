@@ -11,6 +11,7 @@ import TableByFrameRoute from './routes/TableByFrameRoute.js';
 import DataCollectionRoute from './routes/DataCollectionRoute.js';
 import RealTimeRoute from './routes/RealTimeRoute.js';
 import ChargingRoute from './routes/ChargingRoute.js';
+import RectifierRoute from './routes/RectifierRoute.js';
 
 const PORT = process.env.PORT || 3001;
 
@@ -26,5 +27,6 @@ app.use(TableByFrameRoute);
 app.use(DataCollectionRoute);
 app.use(RealTimeRoute);
 app.use(ChargingRoute);
+app.use(RectifierRoute);
 
 app.listen(PORT, () => console.log(`SERVER UP AND RUNNING ${PORT}`));

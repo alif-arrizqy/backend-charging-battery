@@ -3,9 +3,9 @@ import { powerModuleRectifier, setMaxRectifierCurrent, setRectifierCurrent, setR
 
 var router = express.Router()
 
-router.post('/power-module-rectifier/:init', powerModuleRectifier)
-router.get('/set-max-rectifier-current', setMaxRectifierCurrent)
-router.get('/set-rectifier-current', setRectifierCurrent)
-router.get('/set-rectifier-voltage', setRectifierVoltage)
+router.get('/power-module-rectifier/:init', powerModuleRectifier)
+router.get('/set-max-rectifier-current/:init', setMaxRectifierCurrent)
+router.get('/set-rectifier-current/:init', setRectifierCurrent)
+router.get('/set-rectifier-voltage/:init', setRectifierVoltage)
 
 export default router
