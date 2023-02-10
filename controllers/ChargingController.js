@@ -5,24 +5,16 @@ import realtime from '../models/RealTimeModel.js'
 import M_frame from '../models/M_frameModel.js'
 import db from '../config/dataBase.js'
 import configCharging from '../config/configCharging.js'
-import { rectifierMain, readVcell, supplyRectifier, powerModuleRectifier } from './RectifierController.js'
 const env = dotenv.config().parsed
 
 const clearRealtimeTable = async (req, res) => {
     try {
         const del = await realtime.destroy({ truncate: true })
+        if(!del) { throw {code: 500, message: 'CLEAR_TABLE_FAILED' }}
 
-        if(!del) { throw {code: 500, message: 'CLEAR_TABLE_FAILED' } }
-
-        return res.status(200).json({
-            status: true,
-            message: 'CLEAR_REALTIME_TABLE_SUCCESS'
-        })
+        return res.status(200).json({ CODE: 200, status: true, msg: 'CLEAR_REALTIME_TABLE_SUCCESS' })
     } catch (err) {
-        return res.status(500).json({
-            status: false,
-            message: err.message
-        })
+        return res.status(500).json({ code: 500, status: false, msg: err.message })
     }
 }
 
@@ -40,25 +32,70 @@ const cmsData = async (req, res) => {
                         if (item.frame_sn === frameName && item.status_test === true) {
                             const vcell = el.vcell
                             const getDiffVCell = await differentVoltageCell(vcell)
-                            console.log(`Processing frame: ${frameName}`);
+                            console.log(`Processing frame: ${frameName}`)
+
                             // insert data to table
-                            // await insertData(el, getDiffVCell)
+                            await insertData(el, getDiffVCell)
 
                             // check diffence vcell
+                            console.log(getDiffVCell);
                             const resultDVC = await checkMaxDVC(getDiffVCell)
-                            
-
-                            // await rectifierData()
-                            // await rectifierMain(el)
+                            resultDVC ? res.status(500).json({ code: 500, status: false, msg: 'DIFFERENT_VOLTAGE_CELL_TOO_HIGH' }) : res.status(200).json({ code: 200, status: true, msg: 'DIFFERENT_VOLTAGE_CELL_OK' })
+                        } else {
+                            return res.status(404).json({ code: 404, status: false, msg: 'FRAME_NOT_FOUND' })
                         }
                     })
                 })
                 .catch((err) => {
                     console.log(`error get cms data ${err}`)
+                    if (err.code) { err.code = 500 }
+                    return res.status(500).json({ code: 500, status: false, msg: err.message })
                 })
         })
     } catch (err) {
-        console.log(err)
+        if (err.code) { err.code = 500 }
+        return res.status(500).json({ code: 500, status: false, msg: err.message })
+    }
+}
+
+const checkTemperature = async (req, res) => {
+    try {
+        const data = await M_frame.findAll({ attributes: ['frame_sn', 'status_test'], logging: false })
+    
+        data.map(async (item, index) => {
+            await axios({ method: 'GET', url: `${env.BASE_URL}/get-cms-data`, timeout: 10000 })
+                .then((response) => {
+                    const resp = response.data.cms_data
+                    const rs = resp.map(async (el, idx) => {
+                        const frameName = el.frame_name
+                        const temperatureCell = el.temp
+                        if (item.frame_sn === frameName && item.status_test === true) {
+                            temperatureCell.map(async (el, idx) => {
+                                if (el >= configCharging.warningTemp && el < configCharging.cutOffTemp) {
+                                    console.log(`warning temperature is ${el/1000}`)
+                                    return res.status(200).json({ code: 200, status: true, msg: 'WARNING_TEMPERATURE' })
+                                }
+                                if (el >= configCharging.cutOffTemp) {
+                                    console.log(`Temperature is ${el/1000}, cut off charging`)
+                                    return res.status(500).json({ code: 500, status: false, msg: 'TEMPERATURE_TOO_HIGH_CUT_OFF_CHARGING' })
+                                }
+                            })
+                        } else {
+                            return res.status(404).json({ code: 404, status: false, msg: 'FRAME_OR_STATUS_TEST_NOT_FOUND' })
+                        }
+                    })
+                })
+                .catch((err) => {
+                    console.log(`Update status checking err, ${err}`)
+                    if (err.code) { err.code = 500 }
+                    return res.status(500).json({ code: 500, status: false, msg: err.message })
+                })
+        })
+    } 
+    catch (err) {
+        console.log(`Check temperature err, ${err}`)
+        if (err.code) { err.code = 500 }
+        return res.status(500).json({ code: 500, status: false, msg: err.message })
     }
 }
 
@@ -105,11 +142,9 @@ const insertData = async (frameData, dvc) => {
         `
         await db.query(sql_realtime, { type: db.QueryTypes.INSERT, logging: false})
         console.log(`insert data into table realtime success`)
-
-        return true
     } 
     catch (err) {
-        return false
+        console.log(`insert data into table ${frameSN} failed, error: ${err}`)
     }
 }
 
@@ -138,7 +173,6 @@ const differentVoltageCell = async (req, res) => {
 }
 
 const checkMaxDVC = async (req, res) => {
-    // check diffence vcell
     const arrVCell = []
     req.diff_vcell.map((item, index) => {
         Object.values(item).map((el, idx) => {
@@ -150,7 +184,43 @@ const checkMaxDVC = async (req, res) => {
     return maxVCell > setMaxCell ? true : false
 }
 
-const rectifierData = async () => {
+const checkBatteryVoltage = async (req, res) => {
+    try {
+        const data = await M_frame.findAll({ attributes: ['frame_sn', 'status_test'], logging: false })
+
+        data.map(async (item, index) => {
+            await axios({ method: 'GET', url: `${env.BASE_URL}/get-cms-data`, timeout: 10000 })
+            .then((response) => {
+                    const resp = response.data.cms_data
+                    const rs = resp.map(async (el, idx) => {
+                        const frameName = el.frame_name
+                        if (item.frame_sn === frameName && item.status_test === true) {
+                            const vcell = el.vcell
+                            const maxVoltage = []
+                            vcell.map((el, index) => {
+                                if (el > configCharging.maxCellBatt) {
+                                    maxVoltage.push(el)
+                                }
+                            })
+                            return maxVoltage.length > 0 ? res.status(200).json({ code: 200, status: false, msg: 'FULLY_CHARGED'}) : res.status(200).json({ code: 200, status: true, msg: 'BATTERY_NOT_FULLY_CHARGED'})
+                        } else {
+                            return res.status(404).json({ code: 404, status: false, msg: 'FRAME_NOT_FOUND' })
+                        }
+                    })
+                })
+                .catch((err) => {
+                    console.log(`error get cms data ${err}`)
+                    if (err.code) { err.code = 500 }
+                    return res.status(500).json({ code: 500, status: false, msg: err.message })
+                })
+        })
+    } catch (err) {
+        if (err.code) { err.code = 500 }
+        return res.status(500).json({ code: 500, status: false, msg: err.message })
+    }
+}
+
+const rectifierData = async (req, res) => {
     const rectiUrl = env.RECTI_URL
     const rectiId = [1,2,3]
     try {
@@ -172,52 +242,21 @@ const rectifierData = async () => {
                     VALUES ('${module_off}', '${voltage}', '${current}')
                 `
                 await db.query(sql, {type: db.QueryTypes.INSERT})
-                console.log(`insert data into table rectifier_logger_${id} success`);
+                console.log(`insert data into table rectifier_logger_${id} success`)
+                return res.status(201).json({code: 201, status: true, msg: 'INSERT_RECTIFIER_DATA_SUCCESS'})
             })
             .catch((err) => {
-                console.log(err)
+                if(err.code) { err.code = 400 }
+                return res.status(500).json({ code: 500, status: false, msg: err.message })
             })
         })
     } catch (err) {
-        return {code: 500, status:false, message: 'GET_RECTIFIER_DATA_FAILED'}
+        if(err.code) { err.code = 500 }
+        return res.status(500).json({ code: 500, status: false, msg: err.message })
     }
 }
 
-const checkStatus = async (req, res) => {
-    console.log('Checking status');
-    try {
-        const data = await M_frame.findAll({ attributes: ['frame_sn', 'status_test'], logging: false })
-
-        data.map(async (item, index) => {
-            await axios({ method: 'GET', url: `${env.BASE_URL}/get-cms-data`, timeout: 10000 })
-                .then((response) => {
-                    const resp = response.data.cms_data
-                    const rs = resp.map(async (el, idx) => {
-                        const frameName = el.frame_name
-                        if (item.frame_sn === frameName && item.status_test === true) {
-                            const vCell = el.vcell
-                            const getDiffVCell = await differentVoltageCell(vCell)
-                            console.log(`Processing frame: ${frameName}`);
-                            // insert data to table
-                            // await insertData(el, getDiffVCell)
-
-                            // check vcell
-                            await readVcell(el)
-                            res.status(500).json({ code: 500, status: false, msg: 'Battery cell is 3.6, not allowed to charge' })
-                        }
-                    })
-                })
-                .catch((err) => {
-                    console.log(`error get cms data ${err}`)
-                })
-            })
-    } catch (err) {
-        console.log(err)
-    }
-    // await checkStatus()
-}
-
-const updateResultStatus = async () => {
+const updateResultStatus = async (req, res) => {
     try {
         const data = await M_frame.findAll({ attributes: ['frame_sn'], logging: false })
 
@@ -230,52 +269,41 @@ const updateResultStatus = async () => {
                         if (item.frame_sn === frameName) {
                             const vCell = el.vcell
                             const getDiffVCell = await differentVoltageCell(vCell)
-
-                            // const arrVCell = []
-                            // getDiffVCell.diff_vcell.map((item, index) => {
-                            //     Object.values(item).map((el, idx) => {
-                            //         arrVCell.push(el)
-                            //     })
-                            // })
-                            // const maxVCell = Math.max(...arrVCell)
-                            // const setMaxCell = configCharging.setmaxVCell
-                            // if (maxVCell > setMaxCell) {
-                            //     console.log('RESULT CHARGING FAIL')
-                            //     const sql = `UPDATE m_frame SET result = 'fail' WHERE frame_sn = '${frameName}'`
-                            //     await db.query(sql, {type: db.QueryTypes.UPDATE, logging: false})
-                            // } else {
-                            //     console.log('RESULT CHARGING PASS')
-                            //     const sql = `UPDATE m_frame SET result = 'pass' WHERE frame_sn = '${frameName}'`
-                            //     await db.query(sql, {type: db.QueryTypes.UPDATE, logging: false})
-                            // }
                             const resultDVC = await checkMaxDVC(getDiffVCell)
+                            
                             if (resultDVC) {
-                                console.log('RESULT CHARGING FAIL')
                                 const sql = `UPDATE m_frame SET result = 'fail' WHERE frame_sn = '${frameName}'`
                                 await db.query(sql, {type: db.QueryTypes.UPDATE, logging: false})
+                                console.log(`Update status result 'fail' to table m_frame Success`)
+                                res.status(200).json({ code: 200, status: true, msg: 'UPDATE_RESULT_STATUS_SUCCESS' })
                             } else {
-                                console.log('RESULT CHARGING PASS')
                                 const sql = `UPDATE m_frame SET result = 'pass' WHERE frame_sn = '${frameName}'`
                                 await db.query(sql, {type: db.QueryTypes.UPDATE, logging: false})
+                                console.log(`Update status result 'pass' to table m_frame Success`)
+                                return res.status(200).json({ code: 200, status: true, msg: 'UPDATE_RESULT_STATUS_SUCCESS' })
                             }
+                        } else {
+                            return res.status(404).json({ code: 404, status: false, msg: 'FRAME_NOT_FOUND' })
                         }
                     })
                 })
                 .catch((err) => {
-                    console.log(`Update status result err, ${err}`)
+                    if(err.code) { err.code = 500 }
+                    return res.status(500).json({ code: 500, status: false, msg: err.message })
                 })
-        })
-    } catch (err) {
-        console.log('Update status test Failed')
-    } finally {
-        console.log('Update status test Done')
+            })
+        } catch (err) {
+            console.log('Update status result Failed')
+            return res.status(500).json({ code: 500, status: false, msg: err.message })
+        } finally {
+            console.log('Update status result Done')
     }
 }
 
-const updateStatusTest = async () => {
+const updateStatusTest = async (req, res) => {
     try {
         const data = await M_frame.findAll({ attributes: ['frame_sn', 'status_test'], logging: false })
-    
+        
         data.map(async (item, index) => {
             await axios({ method: 'GET', url: `${env.BASE_URL}/get-cms-data`, timeout: 10000 })
                 .then((response) => {
@@ -285,22 +313,28 @@ const updateStatusTest = async () => {
                         if (item.frame_sn === frameName && item.status_test === true) {
                             const sql = `UPDATE m_frame SET status_test = false WHERE frame_sn = '${frameName}'`
                             await db.query(sql, {type: db.QueryTypes.UPDATE, logging: false})
+                            console.log(`Update status test 'false' to table m_frame Success`)
+                            return res.status(200).json({ code: 200, status: true, msg: 'UPDATE_STATUS_TEST_SUCCESS' })
+                        } else {
+                            return res.status(404).json({ code: 404, status: false, msg: 'FRAME_OR_STATUS_TEST_NOT_FOUND' })
                         }
                     })
                 })
                 .catch((err) => {
-                    console.log(`Update status test err, ${err}`)
+                    if(err.code) { err.code = 500 }
+                    return res.status(500).json({ code: 500, status: false, msg: err.message })
                 })
         })
     } catch (err) {
         console.log('Update status test Failed')
+        return res.status(500).json({ code: 500, status: false, msg: err.message })
     } finally {
         console.log('Update status test Done')
     }
     
 }
 
-const updateStatusChecking = async () => {
+const updateStatusChecking = async (req, res) => {
     try {
         const data = await M_frame.findAll({ attributes: ['frame_sn', 'status_checking'], logging: false })
     
@@ -313,62 +347,30 @@ const updateStatusChecking = async () => {
                         if (item.frame_sn === frameName && item.status_checking === false) {
                             const sql = `UPDATE m_frame SET status_checking = true WHERE frame_sn = '${frameName}'`
                             await db.query(sql, {type: db.QueryTypes.UPDATE, logging: false})
+                            console.log(`Update status checking 'true' to table m_frame Success`)
+                            res.status(200).json({ code: 200, status: true, msg: 'UPDATE_STATUS_CHECKING_SUCCESS' })
+                        } else {
+                            res.status(404).json({ code: 404, status: false, msg: 'FRAME_OR_STATUS_CHECKING_NOT_FOUND' })
                         }
                     })
                 })
                 .catch((err) => {
-                    console.log(`Update status checking err, ${err}`)
+                    if (err.code) { err.code = 500 }
+                    return res.status(500).json({ code: 500, status: false, msg: err.message })
                 })
         })
     } catch (err) {
         console.log('Update status checking Failed')
+        return res.status(500).json({ code: 500, status: false, msg: err.message })
     } finally {
         console.log('Update status checking Done')
     }
-
-    // const validTime = await validateTime()
-    // if (validTime) {
-    //     await checkStatus()
-    // } else {
-    //     await mainProgram(false)
-    // }
-    validateTime() ? await checkStatus() : await mainProgram(false)
 }
 
-const validateTime = async () => {
+const validateTime = async (req, res) => {
     const now = moment().format('HH:mm')
     const death = '16:58'
-    return now > death ? true : false
+    return now > death ? res.status(200).json({ code: 200, status: true, msg: 'TIME_IS_OVER'}) : res.status(200).json({ code: 200, status: false, msg: 'TIME_IS_NOT_OVER'})
 }
 
-const mainProgram = async (req, res) => {
-    if (req) {
-        console.log('CHARGING PROGRAM STARTED');
-        while (true) {
-            await cmsData()
-            const validTime = await validateTime()
-            if (validTime) {
-                console.log('Jam Sudah Lewat')
-                await supplyRectifier(false)
-                await powerModuleRectifier(false)
-
-                await updateStatusTest()
-                await updateResultStatus()
-                await updateStatusChecking()
-                res.status(500).json({ code: 500, status: false, message: 'TIME_IS_OVER_CHARGING_STOPPED' })
-            }
-        } 
-    } else {
-        console.log('CHARGING PROGRAM STOPPED')
-        res.status(200).json({ code: 200, status: true, message: 'CHARGING_STOPPED' })
-    }
-}
-
-const shutdownCharging = async () => {
-    await supplyRectifier(false)
-    await powerModuleRectifier(false)
-
-    await mainProgram(false)
-}
-
-export { checkStatus, shutdownCharging, mainProgram, updateStatusTest, updateResultStatus, updateStatusChecking, validateTime, checkMaxDVC }
+export { cmsData, rectifierData, updateStatusTest, updateResultStatus, updateStatusChecking, validateTime, checkTemperature, checkBatteryVoltage, clearRealtimeTable }
