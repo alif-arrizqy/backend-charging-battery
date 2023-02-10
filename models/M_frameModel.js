@@ -40,6 +40,6 @@ const M_frame = db.define(
 
 export default M_frame;
 
-// (async () => {
-//   await db.sync({ alter: true });
-// })();
+(async () => {
+  await db.sync();
+})();
