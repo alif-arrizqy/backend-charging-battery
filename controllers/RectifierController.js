@@ -36,108 +36,40 @@ const powerModuleRectifier = async (req, res) => {
     }
 }
 
-const setMaxRectifierCurrent = async (req, res) => {
-    const init = req.params.init
-    if (init === 'true') {
-        const currValue = 100
-        const body = {
-            'group': 0,
-            'subaddress': 0,
-            'current': currValue
-        }
-        await axios.post({method: 'POST', url: `${env.RECTI_URL}/set-current`, data: body, timeout: 5000})
-            .then((response) => {
-                return res.status(200).json({ code: 200, status: true, msg: `SET_RECTIFIER_CURRENT_TO_${currValue}A` })
-            })
-            .catch((error) => {
-                return res.status(500).json({ code: 500, status: false, msg: error.code })
-            })
-    } else {
-        const currValue = 0
-        const body = {
-            'group': 0,
-            'subaddress': 0,
-            'current': currValue
-        }
-        await axios.post({method: 'POST', url: `${env.RECTI_URL}/set-current`, data: body, timeout: 5000})
-            .then((response) => {
-                return res.status(200).json({ code: 200, status: true, msg: `SET_RECTIFIER_CURRENT_TO_0A` })
-            })
-            .catch((error) => {
-                return res.status(500).json({ code: 500, status: false, msg: error.code })
-            })
-    }
-}
-
 const setRectifierCurrent = async (req, res) => {
-    const init = req.params.init
-    if (init === 'true') {
-        const currValue = [30, 40]
-        currValue.map(async (item, index) => {
-            const body = {
-                'group': 0,
-                'subaddress': 0,
-                'current': item
-            }
-            await axios.post({method: 'POST', url: `${env.RECTI_URL}/set-current`, data: body, timeout: 5000})
-                .then((response) => {
-                    return res.status(200).json({ code: 200, status: true, msg: `SET_RECTIFIER_CURRENT_TO_${item}A` })
-                })
-                .catch((error) => {
-                    return res.status(500).json({ code: 500, status: false, msg: error.code })
-                })
-        })
-    } else {
-        const currValue = 0
-        const body = {
-            'group': 0,
-            'subaddress': 0,
-            'current': currValue
-        }
-        await axios.post({method: 'POST', url: `${env.RECTI_URL}/set-current`, data: body, timeout: 5000})
-            .then((response) => {
-                return res.status(200).json({ code: 200, status: true, msg: `SET_RECTIFIER_CURRENT_TO_0A` })
-            })
-            .catch((error) => {
-                return res.status(500).json({ code: 500, status: false, msg: error.code })
-            })
+    const currValue = req.body.current
+
+    const body = {
+        'group': 0,
+        'subaddress': 0,
+        'current': currValue*1000
     }
+    await axios.post({method: 'POST', url: `${env.RECTI_URL}/set-current`, data: body, timeout: 5000})
+        .then((response) => {
+            return res.status(200).json({ code: 200, status: true, msg: `SET_RECTIFIER_CURRENT_TO_${currValue}A` })
+        })
+        .catch((error) => {
+            return res.status(500).json({ code: 500, status: false, msg: error.code })
+        })
 }
 
 const setRectifierVoltage = async (req, res) => {
-    const init = req.params.init
-    if (init === 'true') {
-        const maxVoltCell = 3600
-        const totalCell = 32
-        const result = maxVoltCell * totalCell
+    const maxVoltCell = req.body.maxVoltage
+    const totalCell = req.body.totalCell
+    const result = maxVoltCell * totalCell
 
-        const body = {
-            'group': 0,
-            'subaddress': 0,
-            'voltage': result
-        }
-
-        await axios.post({method: 'POST', url: `${env.RECTI_URL}/set-voltage`, data: body, timeout: 5000})
-            .then((response) => {
-                return res.status(200).json({ code: 200, status: true, msg: `SET_RECTIFIER_VOLTAGE_TO_${result}V` })
-            })
-            .catch((error) => {
-                return res.status(500).json({ code: 500, status: false, msg: error.code })
-            })
-    } else {
-        const body = {
-            'group': 0,
-            'subaddress': 0,
-            'voltage': 0
-        }
-        await axios.post({method: 'POST', url: `${env.RECTI_URL}/set-voltage`, data: body, timeout: 5000})
-            .then((response) => {
-                return res.status(200).json({ code: 200, status: true, msg: `SET_RECTIFIER_VOLTAGE_TO_0V` })
-            })
-            .catch((error) => {
-                return res.status(500).json({ code: 500, status: false, msg: error.code })
-            })
+    const body = {
+        'group': 0,
+        'subaddress': 0,
+        'voltage': result
     }
+    await axios.post({method: 'POST', url: `${env.RECTI_URL}/set-voltage`, data: body, timeout: 5000})
+        .then((response) => {
+            return res.status(200).json({ code: 200, status: true, msg: `SET_RECTIFIER_VOLTAGE_TO_${result}V` })
+        })
+        .catch((error) => {
+            return res.status(500).json({ code: 500, status: false, msg: error.code })
+        })
 }
 
 export { powerModuleRectifier, setMaxRectifierCurrent, setRectifierCurrent, setRectifierVoltage }
