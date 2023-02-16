@@ -37,8 +37,8 @@ const powerModuleRectifier = async (req, res) => {
 }
 
 const setRectifierCurrent = async (req, res) => {
-    const currValue = req.body.current
-
+    const currValue = parseInt(req.body.current)
+    
     const body = {
         'group': 0,
         'subaddress': 0,
@@ -54,8 +54,8 @@ const setRectifierCurrent = async (req, res) => {
 }
 
 const setRectifierVoltage = async (req, res) => {
-    const maxVoltCell = req.body.maxVoltage
-    const totalCell = req.body.totalCell
+    const maxVoltCell = parseInt(req.body.maxVoltage)
+    const totalCell = parseInt(req.body.totalCell)
     const result = maxVoltCell * totalCell
 
     const body = {
@@ -72,4 +72,4 @@ const setRectifierVoltage = async (req, res) => {
         })
 }
 
-export { powerModuleRectifier, setMaxRectifierCurrent, setRectifierCurrent, setRectifierVoltage }
+export { powerModuleRectifier, setRectifierCurrent, setRectifierVoltage }
