@@ -111,3 +111,17 @@ export const deleteMframe = async (req, res) => {
     console.log(error.message);
   }
 };
+
+export const deletebyMframe = async (req, res) => {
+  try {
+    const response = await M_frame.destroy({
+      where: {
+        frame_sn: req.body.frame_sn,
+      },
+    });
+
+    res.status(200).json({ msg: "mframe_deleted" });
+  } catch (error) {
+    console.log(error.message);
+  }
+};

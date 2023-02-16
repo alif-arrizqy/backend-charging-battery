@@ -39,3 +39,18 @@ export const getTableDataById = async (req, res) => {
     console.log(error.message);
   }
 };
+
+export const deleteTableFrame = async (req, res) => {
+  const frame_sn = res.req.body.frame_sn;
+
+  const frame_select = '"' + frame_sn + '"';
+
+  console.log("frame_sn = " + frame_select);
+  try {
+    const result = await db.query("DROP TABLE " + frame_select);
+    // res.status(200).json(result);
+    res.status(200).json({ msg: "table_deleted" });
+  } catch (error) {
+    console.log(error.message);
+  }
+};
