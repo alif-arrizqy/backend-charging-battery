@@ -52,20 +52,16 @@ const cmsData = async (req, res) => {
               console.log(getDiffVCell);
               const resultDVC = await checkMaxDVC(getDiffVCell);
               resultDVC
-                ? res
-                    .status(500)
-                    .json({
-                      code: 500,
-                      status: false,
-                      msg: "DIFFERENT_VOLTAGE_CELL_TOO_HIGH",
-                    })
-                : res
-                    .status(200)
-                    .json({
-                      code: 200,
-                      status: true,
-                      msg: "DIFFERENT_VOLTAGE_CELL_OK",
-                    });
+                ? res.status(500).json({
+                    code: 500,
+                    status: false,
+                    msg: "DIFFERENT_VOLTAGE_CELL_TOO_HIGH",
+                  })
+                : res.status(200).json({
+                    code: 200,
+                    status: true,
+                    msg: "DIFFERENT_VOLTAGE_CELL_OK",
+                  });
             } else {
               return res
                 .status(404)
@@ -116,33 +112,27 @@ const checkTemperature = async (req, res) => {
                   el < configCharging.cutOffTemp
                 ) {
                   console.log(`warning temperature is ${el / 1000}`);
-                  return res
-                    .status(200)
-                    .json({
-                      code: 200,
-                      status: true,
-                      msg: "WARNING_TEMPERATURE",
-                    });
+                  return res.status(200).json({
+                    code: 200,
+                    status: true,
+                    msg: "WARNING_TEMPERATURE",
+                  });
                 }
                 if (el >= configCharging.cutOffTemp) {
                   console.log(`Temperature is ${el / 1000}, cut off charging`);
-                  return res
-                    .status(500)
-                    .json({
-                      code: 500,
-                      status: false,
-                      msg: "TEMPERATURE_TOO_HIGH_CUT_OFF_CHARGING",
-                    });
+                  return res.status(500).json({
+                    code: 500,
+                    status: false,
+                    msg: "TEMPERATURE_TOO_HIGH_CUT_OFF_CHARGING",
+                  });
                 }
               });
             } else {
-              return res
-                .status(404)
-                .json({
-                  code: 404,
-                  status: false,
-                  msg: "FRAME_OR_STATUS_TEST_NOT_FOUND",
-                });
+              return res.status(404).json({
+                code: 404,
+                status: false,
+                msg: "FRAME_OR_STATUS_TEST_NOT_FOUND",
+              });
             }
           });
         })
@@ -255,6 +245,9 @@ const checkMaxDVC = async (req, res) => {
 const checkBatteryVoltage = async (req, res) => {
   try {
     const data = await M_frame.findAll({
+      where: {
+        frame_sn: req.body.frame_sn,
+      },
       attributes: ["frame_sn", "status_test"],
       logging: false,
     });
@@ -269,29 +262,46 @@ const checkBatteryVoltage = async (req, res) => {
           const resp = response.data.cms_data;
           const rs = resp.map(async (el, idx) => {
             const frameName = el.frame_name;
-            if (item.frame_sn === frameName && item.status_test === true) {
-              const vcell = el.vcell;
-              const maxVoltage = [];
-              vcell.map((el, index) => {
-                if (el > configCharging.maxCellBatt) {
-                  maxVoltage.push(el);
+            const bid = el.bid;
+            if (bid > 0) {
+              if (item.frame_sn === frameName && item.status_test === true) {
+                const vcell = el.vcell;
+                const maxVoltage = [];
+                vcell.map((el, index) => {
+                  if (el > configCharging.maxCellBatt) {
+                    maxVoltage.push(el);
+                  }
+                });
+                // return maxVoltage.length > 0
+                //   ? res
+                //       .status(200)
+                //       .json({ code: 200, status: false, msg: "FULLY_CHARGED" })
+                //   : res.status(200).json({
+                //       code: 200,
+                //       status: true,
+                //       msg: "BATTERY_NOT_FULLY_CHARGED",
+                //     });
+                if (maxVoltage.length > 0) {
+                  console.log("battfull");
+                  return res
+                    .status(200)
+                    .json({ code: 200, status: false, msg: "FULLY_CHARGED" });
+                } else {
+                  return res.status(200).json({
+                    code: 200,
+                    status: true,
+                    msg: "BATTERY_NOT_FULLY_CHARGED",
+                  });
+                  console.log("batt tidak full");
                 }
-              });
-              return maxVoltage.length > 0
-                ? res
-                    .status(200)
-                    .json({ code: 200, status: false, msg: "FULLY_CHARGED" })
-                : res
-                    .status(200)
-                    .json({
-                      code: 200,
-                      status: true,
-                      msg: "BATTERY_NOT_FULLY_CHARGED",
-                    });
+              } else {
+                return res
+                  .status(404)
+                  .json({ code: 404, status: false, msg: "FRAME_NOT_FOUND" });
+                console.log("ERROR");
+              }
             } else {
-              return res
-                .status(404)
-                .json({ code: 404, status: false, msg: "FRAME_NOT_FOUND" });
+              console.log("do nothing");
             }
           });
         })
@@ -342,13 +352,11 @@ const rectifierData = async (req, res) => {
                 `;
           await db.query(sql, { type: db.QueryTypes.INSERT });
           console.log(`insert data into table rectifier_logger_${id} success`);
-          return res
-            .status(201)
-            .json({
-              code: 201,
-              status: true,
-              msg: "INSERT_RECTIFIER_DATA_SUCCESS",
-            });
+          return res.status(201).json({
+            code: 201,
+            status: true,
+            msg: "INSERT_RECTIFIER_DATA_SUCCESS",
+          });
         })
         .catch((err) => {
           if (err.code) {
@@ -398,13 +406,11 @@ const updateResultStatus = async (req, res) => {
                 console.log(
                   `Update status result 'fail' to table m_frame Success`
                 );
-                res
-                  .status(200)
-                  .json({
-                    code: 200,
-                    status: true,
-                    msg: "UPDATE_RESULT_STATUS_SUCCESS",
-                  });
+                res.status(200).json({
+                  code: 200,
+                  status: true,
+                  msg: "UPDATE_RESULT_STATUS_SUCCESS",
+                });
               } else {
                 const sql = `UPDATE m_frame SET result = 'pass' WHERE frame_sn = '${frameName}'`;
                 await db.query(sql, {
@@ -414,13 +420,11 @@ const updateResultStatus = async (req, res) => {
                 console.log(
                   `Update status result 'pass' to table m_frame Success`
                 );
-                return res
-                  .status(200)
-                  .json({
-                    code: 200,
-                    status: true,
-                    msg: "UPDATE_RESULT_STATUS_SUCCESS",
-                  });
+                return res.status(200).json({
+                  code: 200,
+                  status: true,
+                  msg: "UPDATE_RESULT_STATUS_SUCCESS",
+                });
               }
             } else {
               return res
@@ -472,21 +476,17 @@ const updateStatusTest = async (req, res) => {
               console.log(
                 `Update status test 'false' to table m_frame Success`
               );
-              return res
-                .status(200)
-                .json({
-                  code: 200,
-                  status: true,
-                  msg: "UPDATE_STATUS_TEST_SUCCESS",
-                });
+              return res.status(200).json({
+                code: 200,
+                status: true,
+                msg: "UPDATE_STATUS_TEST_SUCCESS",
+              });
             } else {
-              return res
-                .status(404)
-                .json({
-                  code: 404,
-                  status: false,
-                  msg: "FRAME_OR_STATUS_TEST_NOT_FOUND",
-                });
+              return res.status(404).json({
+                code: 404,
+                status: false,
+                msg: "FRAME_OR_STATUS_TEST_NOT_FOUND",
+              });
             }
           });
         })
@@ -533,21 +533,17 @@ const updateStatusChecking = async (req, res) => {
               console.log(
                 `Update status checking 'true' to table m_frame Success`
               );
-              res
-                .status(200)
-                .json({
-                  code: 200,
-                  status: true,
-                  msg: "UPDATE_STATUS_CHECKING_SUCCESS",
-                });
+              res.status(200).json({
+                code: 200,
+                status: true,
+                msg: "UPDATE_STATUS_CHECKING_SUCCESS",
+              });
             } else {
-              res
-                .status(404)
-                .json({
-                  code: 404,
-                  status: false,
-                  msg: "FRAME_OR_STATUS_CHECKING_NOT_FOUND",
-                });
+              res.status(404).json({
+                code: 404,
+                status: false,
+                msg: "FRAME_OR_STATUS_CHECKING_NOT_FOUND",
+              });
             }
           });
         })
