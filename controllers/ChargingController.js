@@ -41,51 +41,87 @@ const cmsData = async (req, res) => {
           timeout: 10000,
         })
           .then((response) => {
+            const store = [];
+            const storeBID = [];
             const resp = response.data.cms_data;
-            const rs = resp.map(async (el, idx) => {
-              const frameName = el.frame_name;
-              const bid = el.bid;
-              if (bid > 0) {
-                if (item.frame_sn === frameName && item.status_test === true) {
-                  const vcell = el.vcell;
-                  const getDiffVCell = await differentVoltageCell(vcell);
-                  console.log(`Processing frame: ${frameName}`);
 
-                  // insert data to table
-                  await insertData(el, getDiffVCell);
-
-                  // check diffence vcell
-                  const resultDVC = await checkMaxDVC(getDiffVCell);
-                  resultDVC
-                    ? res.status(500).json({
-                        code: 500,
-                        status: false,
-                        msg: "DIFFERENT_VOLTAGE_CELL_TOO_HIGH",
-                      })
-                    : res.status(200).json({
-                        code: 200,
-                        status: true,
-                        msg: "DIFFERENT_VOLTAGE_CELL_OK",
-                      });
-                } else {
-                  return res.status(404).json({ code: 404, status: false, msg: "PLEASE_CHECK_FRAME_NAME_AND_STATUS_TEST" });
-                }
-              } else {
-                return res.status(404).json({ code: 404, status: false, msg: "BID_NOT_FOUND" });
+            // map response data
+            resp.map(async (el, idx) => {
+              if (el.bid > 0) {
+                storeBID.push(el);
               }
             });
+
+            // map bid
+            if (storeBID.length > 0) {
+              storeBID.map(async (el, idx) => {
+                if (
+                  item.frame_sn === el.frame_name &&
+                  item.status_test === true
+                ) {
+                  store.push(el);
+                }
+              });
+            } else {
+              return res
+                .status(404)
+                .json({ code: 404, status: false, msg: "BID_NOT_FOUND" });
+            }
+
+            // map store data
+            if (store.length > 0) {
+              store.map(async (el, idx) => {
+                const frameName = el.frame_name;
+                const vcell = el.vcell;
+                const getDiffVCell = await differentVoltageCell(vcell);
+                console.log(`Processing frame: ${frameName}`);
+
+                // insert data to table
+                await insertData(el, getDiffVCell);
+
+                // check diffence vcell
+                const resultDVC = await checkMaxDVC(getDiffVCell);
+                resultDVC
+                  ? res.status(500).json({
+                    code: 500,
+                    status: false,
+                    msg: "DIFFERENT_VOLTAGE_CELL_TOO_HIGH",
+                  })
+                  : res.status(200).json({
+                    code: 200,
+                    status: true,
+                    msg: "DIFFERENT_VOLTAGE_CELL_OK",
+                  });
+              });
+            } else {
+              return res
+                .status(404)
+                .json({
+                  code: 404,
+                  status: false,
+                  msg: "PLEASE_CHECK_FRAME_NAME_AND_STATUS_TEST",
+                });
+            }
           })
           .catch((err) => {
             console.log(`error get cms data ${err}`);
-            if (err.code) { err.code = 500 }
-            return res.status(500).json({ code: 500, status: false, msg: err.message });
+            if (err.code) {
+              err.code = 500;
+            }
+            return res
+              .status(500)
+              .json({ code: 500, status: false, msg: err.message });
           });
       });
     } else {
-      return res.status(404).json({ code: 404, status: false, msg: "FRAME_NOT_FOUND_IN_MFRAME" });
+      return res
+        .status(404)
+        .json({ code: 404, status: false, msg: "FRAME_NOT_FOUND_IN_MFRAME" });
     }
   } catch (err) {
-    if (err.code) { err.code = 500 }
+    if (err.code) {
+      err.code = 500;
+    }
     return res.status(500).json({ code: 500, status: false, msg: err.message });
   }
 };
@@ -108,61 +144,87 @@ const checkTemperature = async (req, res) => {
           timeout: 10000,
         })
           .then((response) => {
+            const store = [];
+            const storeBID = [];
             const resp = response.data.cms_data;
-            const rs = resp.map(async (el, idx) => {
-              const frameName = el.frame_name;
-              const temperatureCell = el.temp;
-              const bid = el.bid;
-              if (bid > 0) {
-                if (item.frame_sn === frameName && item.status_test === true) {
-                  temperatureCell.map(async (el, idx) => {
-                    console.log(el);
-                    if (el <= configCharging.warningTemp) {
-                      console.log(`Temperature is ${el / 1000}, ok`);
-                      return res.status(200).json({
-                        code: 200,
-                        status: true,
-                        msg: "TEMPERATURE_OK",
-                      });
-                    }
-                    if ( el >= configCharging.warningTemp && el < configCharging.cutOffTemp ) {
-                      console.log(`warning temperature is ${el / 1000}`);
-                      return res.status(200).json({
-                        code: 200,
-                        status: true,
-                        msg: "WARNING_TEMPERATURE",
-                      });
-                      
-                    }
-                    if (el >= configCharging.cutOffTemp) {
-                      console.log(`Temperature is ${el / 1000}, cut off charging`);
-                      return res.status(500).json({
-                        code: 500,
-                        status: false,
-                        msg: "TEMPERATURE_TOO_HIGH_CUT_OFF_CHARGING",
-                      });
-                    }
-                  });
-                } else {
-                  return res.status(404).json({
-                    code: 404,
-                    status: false,
-                    msg: "PLEASE_CHECK_FRAME_NAME_AND_STATUS_TEST",
-                  });
-                }
-              } else {
-                return res.status(404).json({ code: 404, status: false, msg: "BID_NOT_FOUND" });
+
+            // map response data
+            resp.map(async (el, idx) => {
+              if (el.bid > 0) {
+                storeBID.push(el);
               }
             });
+
+            // map bid
+            if (storeBID.length > 0) {
+              storeBID.map(async (el, idx) => {
+                if (
+                  item.frame_sn === el.frame_name &&
+                  item.status_test === true
+                ) {
+                  store.push(el);
+                }
+              });
+            } else {
+              return res
+                .status(404)
+                .json({ code: 404, status: false, msg: "BID_NOT_FOUND" });
+            }
+
+            // map store data
+            if (store.length > 0) {
+              store.map(async (el, idx) => {
+                const frameName = el.frame_name;
+                const temperatureCell = el.temp;
+                const highTemperature = [];
+                temperatureCell.map(async (elm, idx) => {
+                  if (elm >= configCharging.cutOffTemp) {
+                    highTemperature.push(elm);
+                  }
+                });
+                if (highTemperature.length > 0) {
+                  console.log(
+                    `Frame ${frameName} Temperature is ${highTemperature[0] / 1000
+                    }, cut off charging`
+                  );
+                  return res.status(500).json({
+                    code: 500,
+                    status: false,
+                    msg: "TEMPERATURE_TOO_HIGH_CUT_OFF_CHARGING",
+                  });
+                } else {
+                  console.log(`Frame ${frameName} Temperature is ok`);
+                  return res.status(200).json({
+                    code: 200,
+                    status: true,
+                    msg: "TEMPERATURE_OK",
+                  });
+                }
+              });
+            } else {
+              return res
+                .status(404)
+                .json({
+                  code: 404,
+                  status: false,
+                  msg: "PLEASE_CHECK_FRAME_NAME_AND_STATUS_TEST",
+                });
+            }
           })
           .catch((err) => {
             console.log(`error get cms data ${err}`);
-            if (err.code) { err.code = 500 }
-            return res.status(500).json({ code: 500, status: false, msg: err.message });
+            if (err.code) {
+              err.code = 500;
+            }
+            return res
+              .status(500)
+              .json({ code: 500, status: false, msg: err.message });
           });
       });
     } else {
-      return res.status(404).json({ code: 404, status: false, msg: "FRAME_NOT_FOUND_IN_MFRAME" });
+      return res
+        .status(404)
+        .json({ code: 404, status: false, msg: "FRAME_NOT_FOUND_IN_MFRAME" });
     }
   } catch (err) {
     console.log(`Check temperature err, ${err}`);
@@ -269,7 +331,7 @@ const checkBatteryVoltage = async (req, res) => {
       attributes: ["frame_sn", "status_test"],
       logging: false,
     });
-    
+
     if (data.length > 0) {
       data.map(async (item, index) => {
         await axios({
@@ -278,48 +340,85 @@ const checkBatteryVoltage = async (req, res) => {
           timeout: 10000,
         })
           .then((response) => {
+            const store = [];
+            const storeBID = [];
             const resp = response.data.cms_data;
-            const rs = resp.map(async (el, idx) => {
-              const frameName = el.frame_name;
-              const bid = el.bid;
-              if (bid > 0) {
-                if (item.frame_sn === frameName && item.status_test === true) {
-                  const vcell = el.vcell;
-                  const maxVoltage = [];
-                  vcell.map((el, index) => {
-                    if (el > configCharging.maxCellBatt) {
-                      maxVoltage.push(el);
-                    }
-                  });
-                  return maxVoltage.length > 0
-                    ? res.status(200).json({
-                        code: 200,
-                        status: false,
-                        msg: "FULLY_CHARGED" })
-                    : res.status(200).json({
-                        code: 200,
-                        status: true,
-                        msg: "BATTERY_NOT_FULLY_CHARGED",
-                      });
-                } else {
-                  return res.status(404).json({ code: 404, status: false, msg: "PLEASE_CHECK_FRAME_NAME_AND_STATUS_TEST" });
-                }
-              } else {
-                return res.status(404).json({ code: 404, status: false, msg: "BID_NOT_FOUND" });
+
+            // map response data
+            resp.map(async (el, idx) => {
+              if (el.bid > 0) {
+                storeBID.push(el);
               }
             });
+
+            // map bid
+            if (storeBID.length > 0) {
+              storeBID.map(async (el, idx) => {
+                if (
+                  item.frame_sn === el.frame_name &&
+                  item.status_test === true
+                ) {
+                  store.push(el);
+                }
+              });
+            } else {
+              return res
+                .status(404)
+                .json({ code: 404, status: false, msg: "BID_NOT_FOUND" });
+            }
+
+            // map store data
+            if (store.length > 0) {
+              store.map(async (el, idx) => {
+                const frameName = el.frame_name;
+                const vcell = el.vcell;
+                const maxVoltage = [];
+                vcell.map((el, index) => {
+                  if (el > configCharging.maxCellBatt) {
+                    maxVoltage.push(el);
+                  }
+                });
+                return maxVoltage.length > 0
+                  ? res.status(200).json({
+                    code: 200,
+                    status: false,
+                    msg: "FULLY_CHARGED",
+                  })
+                  : res.status(200).json({
+                    code: 200,
+                    status: true,
+                    msg: "BATTERY_NOT_FULLY_CHARGED",
+                  });
+              });
+            } else {
+              return res
+                .status(404)
+                .json({
+                  code: 404,
+                  status: false,
+                  msg: "PLEASE_CHECK_FRAME_NAME_AND_STATUS_TEST",
+                });
+            }
           })
           .catch((err) => {
             console.log(`error get cms data ${err}`);
-            if (err.code) { err.code = 500 }
-            return res.status(500).json({ code: 500, status: false, msg: err.message });
+            if (err.code) {
+              err.code = 500;
+            }
+            return res
+              .status(500)
+              .json({ code: 500, status: false, msg: err.message });
           });
       });
     } else {
-      return res.status(404).json({ code: 404, status: false, msg: "FRAME_NOT_FOUND_IN_MFRAME" });
+      return res
+        .status(404)
+        .json({ code: 404, status: false, msg: "FRAME_NOT_FOUND_IN_MFRAME" });
     }
   } catch (err) {
-    if (err.code) { err.code = 500 }
+    if (err.code) {
+      err.code = 500;
+    }
     return res.status(500).json({ code: 500, status: false, msg: err.message });
   }
 };
@@ -387,21 +486,47 @@ const updateResultStatus = async (req, res) => {
     });
 
     if (data.length > 0) {
-      data.map(async (item, index) => {
-        await axios({
-          method: "GET",
-          url: `${env.BASE_URL}/get-cms-data`,
-          timeout: 10000,
-        })
-          .then((response) => {
-            const resp = response.data.cms_data;
-            const rs = resp.map(async (el, idx) => {
-              const frameName = el.frame_name;
-              const bid = el.bid;
-              if (bid > 0) {
-                if (item.frame_sn === frameName && item.status_test === true) {
-                  const vCell = el.vcell;
-                  const getDiffVCell = await differentVoltageCell(vCell);
+      data
+        .map(async (item, index) => {
+          await axios({
+            method: "GET",
+            url: `${env.BASE_URL}/get-cms-data`,
+            timeout: 10000,
+          })
+            .then((response) => {
+              const store = [];
+              const storeBID = [];
+              const resp = response.data.cms_data;
+
+              // map response data
+              resp.map(async (el, idx) => {
+                if (el.bid > 0) {
+                  storeBID.push(el);
+                }
+              });
+
+              // map bid
+              if (storeBID.length > 0) {
+                storeBID.map(async (el, idx) => {
+                  if (
+                    item.frame_sn === el.frame_name &&
+                    item.status_test === true
+                  ) {
+                    store.push(el);
+                  }
+                });
+              } else {
+                return res
+                  .status(404)
+                  .json({ code: 404, status: false, msg: "BID_NOT_FOUND" });
+              }
+
+              // map store data
+              if (store.length > 0) {
+                store.map(async (el, idx) => {
+                  const frameName = el.frame_name;
+                  const vcell = el.vcell;
+                  const getDiffVCell = await differentVoltageCell(vcell);
                   const resultDVC = await checkMaxDVC(getDiffVCell);
 
                   if (resultDVC) {
@@ -433,28 +558,36 @@ const updateResultStatus = async (req, res) => {
                       msg: "UPDATE_RESULT_STATUS_SUCCESS",
                     });
                   }
-                } else {
-                  return res.status(404).json({ code: 404, status: false, msg: "PLEASE_CHECK_FRAME_NAME_AND_STATUS_TEST" });
-                }
+                });
               } else {
-                return res.status(404).json({ code: 404, status: false, msg: "BID_NOT_FOUND" });
+                return res
+                  .status(404)
+                  .json({
+                    code: 404,
+                    status: false,
+                    msg: "PLEASE_CHECK_FRAME_NAME_AND_STATUS_TEST",
+                  });
               }
-            });
-          })
-          .catch((err) => {
-            console.log(`error get cms data ${err}`);
-            if (err.code) { err.code = 500 }
-            return res.status(500).json({ code: 500, status: false, msg: err.message });
-          });
-      });
+            })
+            .catch((err) => {
+              if (err.code) {
+                err.code = 400;
+              }
+              return res
+                .status(500)
+                .json({ code: 500, status: false, msg: err.message });
+            })
+        });
     } else {
-      return res.status(404).json({ code: 404, status: false, msg: "FRAME_NOT_FOUND_IN_MFRAME" });
+      return res
+        .status(404)
+        .json({ code: 404, status: false, msg: "FRAME_NOT_FOUND" });
     }
   } catch (err) {
-    console.log("Update status result Failed");
+    if (err.code) {
+      err.code = 500;
+    }
     return res.status(500).json({ code: 500, status: false, msg: err.message });
-  } finally {
-    console.log("Update status result Done");
   }
 };
 
@@ -476,47 +609,80 @@ const updateStatusTest = async (req, res) => {
           timeout: 10000,
         })
           .then((response) => {
+            const store = [];
+            const storeBID = [];
             const resp = response.data.cms_data;
-            const rs = resp.map(async (el, idx) => {
-              const frameName = el.frame_name;
-              const bid = el.bid;
-              if (bid > 0) {
-                if (item.frame_sn === frameName && item.status_test === true) {
-                  const sql = `UPDATE m_frame SET status_test = false WHERE frame_sn = '${frameName}'`;
-                  await db.query(sql, {
-                    type: db.QueryTypes.UPDATE,
-                    logging: false,
-                  });
-                  console.log(
-                    `Update status test 'false' to table m_frame Success`
-                  );
-                  return res.status(200).json({
-                    code: 200,
-                    status: true,
-                    msg: "UPDATE_STATUS_TEST_SUCCESS",
-                  });
-                } else {
-                  return res.status(404).json({ code: 404, status: false, msg: "PLEASE_CHECK_FRAME_NAME_AND_STATUS_TEST" });
-                }
-              } else {
-                return res.status(404).json({ code: 404, status: false, msg: "BID_NOT_FOUND" });
+
+            // map response data
+            resp.map(async (el, idx) => {
+              if (el.bid > 0) {
+                storeBID.push(el);
               }
             });
+
+            // map bid
+            if (storeBID.length > 0) {
+              storeBID.map(async (el, idx) => {
+                if (
+                  item.frame_sn === el.frame_name &&
+                  item.status_test === true
+                ) {
+                  store.push(el);
+                }
+              });
+            } else {
+              return res
+                .status(404)
+                .json({ code: 404, status: false, msg: "BID_NOT_FOUND" });
+            }
+
+            // map store data
+            if (store.length > 0) {
+              store.map(async (el, idx) => {
+                const frameName = el.frame_name;
+                const sql = `UPDATE m_frame SET status_test = false WHERE frame_sn = '${frameName}'`;
+                await db.query(sql, {
+                  type: db.QueryTypes.UPDATE,
+                  logging: false,
+                });
+                console.log(
+                  `Update status test 'false' to table m_frame Success`
+                );
+                return res.status(200).json({
+                  code: 200,
+                  status: true,
+                  msg: "UPDATE_STATUS_TEST_SUCCESS",
+                });
+              });
+            } else {
+              return res
+                .status(404)
+                .json({
+                  code: 404,
+                  status: false,
+                  msg: "PLEASE_CHECK_FRAME_NAME_AND_STATUS_TEST",
+                });
+            }
           })
           .catch((err) => {
-            console.log(`error get cms data ${err}`);
-            if (err.code) { err.code = 500 }
-            return res.status(500).json({ code: 500, status: false, msg: err.message });
-          });
+            if (err.code) {
+              err.code = 400;
+            }
+            return res
+              .status(500)
+              .json({ code: 500, status: false, msg: err.message });
+          })
       });
     } else {
-      return res.status(404).json({ code: 404, status: false, msg: "FRAME_NOT_FOUND_IN_MFRAME" });
+      return res
+        .status(404)
+        .json({ code: 404, status: false, msg: "FRAME_NOT_FOUND" });
     }
   } catch (err) {
-    console.log("Update status test Failed");
+    if (err.code) {
+      err.code = 500;
+    }
     return res.status(500).json({ code: 500, status: false, msg: err.message });
-  } finally {
-    console.log("Update status test Done");
   }
 };
 
@@ -526,7 +692,7 @@ const updateStatusChecking = async (req, res) => {
       where: {
         frame_sn: req.body.frame_sn,
       },
-      attributes: ["frame_sn", "status_test"],
+      attributes: ["frame_sn", "status_checking"],
       logging: false,
     });
 
@@ -538,49 +704,82 @@ const updateStatusChecking = async (req, res) => {
           timeout: 10000,
         })
           .then((response) => {
+            const store = [];
+            const storeBID = [];
             const resp = response.data.cms_data;
-            const rs = resp.map(async (el, idx) => {
-              const frameName = el.frame_name;
-              const bid = el.bid;
-              if (bid > 0) {
-                if (item.frame_sn === frameName && item.status_checking === false) {
-                  const sql = `UPDATE m_frame SET status_checking = true WHERE frame_sn = '${frameName}'`;
-                  await db.query(sql, {
-                    type: db.QueryTypes.UPDATE,
-                    logging: false,
-                  });
-                  console.log(
-                    `Update status checking 'true' to table m_frame Success`
-                  );
-                  res.status(200).json({
-                    code: 200,
-                    status: true,
-                    msg: "UPDATE_STATUS_CHECKING_SUCCESS",
-                  });
-                } else {
-                  return res.status(404).json({ code: 404, status: false, msg: "PLEASE_CHECK_FRAME_NAME_AND_STATUS_TEST" });
-                }
-              } else {
-                res.status(404).json({ code: 404, status: false, msg: "BID_NOT_FOUND" });
+
+            // map response data
+            resp.map(async (el, idx) => {
+              if (el.bid > 0) {
+                storeBID.push(el);
               }
             });
+
+            // map bid
+            if (storeBID.length > 0) {
+              storeBID.map(async (el, idx) => {
+                if (
+                  item.frame_sn === el.frame_name &&
+                  item.status_checking === false
+                ) {
+                  store.push(el);
+                }
+              });
+            } else {
+              return res
+                .status(404)
+                .json({ code: 404, status: false, msg: "BID_NOT_FOUND" });
+            }
+
+            // map store data
+            if (store.length > 0) {
+              store.map(async (el, idx) => {
+                const frameName = el.frame_name;
+                const sql = `UPDATE m_frame SET status_checking = true WHERE frame_sn = '${frameName}'`;
+                await db.query(sql, {
+                  type: db.QueryTypes.UPDATE,
+                  logging: false,
+                });
+                console.log(
+                  `Update status checking 'true' to table m_frame Success`
+                );
+                res.status(200).json({
+                  code: 200,
+                  status: true,
+                  msg: "UPDATE_STATUS_CHECKING_SUCCESS",
+                });
+              });
+            } else {
+              return res
+                .status(404)
+                .json({
+                  code: 404,
+                  status: false,
+                  msg: "PLEASE_CHECK_FRAME_NAME_AND_STATUS_TEST",
+                });
+            }
           })
           .catch((err) => {
-            console.log(`error get cms data ${err}`);
-            if (err.code) { err.code = 500 }
-            return res.status(500).json({ code: 500, status: false, msg: err.message });
-          });
+            if (err.code) {
+              err.code = 400;
+            }
+            return res
+              .status(500)
+              .json({ code: 500, status: false, msg: err.message });
+          })
       });
     } else {
-      return res.status(404).json({ code: 404, status: false, msg: "FRAME_NOT_FOUND_IN_MFRAME" });
+      return res
+        .status(404)
+        .json({ code: 404, status: false, msg: "FRAME_NOT_FOUND" });
     }
   } catch (err) {
-    console.log("Update status checking Failed");
+    if (err.code) {
+      err.code = 500;
+    }
     return res.status(500).json({ code: 500, status: false, msg: err.message });
-  } finally {
-    console.log("Update status checking Done");
   }
-};
+}
 
 const validateTime = async (req, res) => {
   const now = moment().format("HH:mm");
@@ -588,8 +787,8 @@ const validateTime = async (req, res) => {
   return now > death
     ? res.status(200).json({ code: 200, status: true, msg: "TIME_IS_OVER" })
     : res
-        .status(200)
-        .json({ code: 200, status: false, msg: "TIME_IS_NOT_OVER" });
+      .status(200)
+      .json({ code: 200, status: false, msg: "TIME_IS_NOT_OVER" });
 };
 
 export {
