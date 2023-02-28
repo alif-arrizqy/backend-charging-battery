@@ -432,8 +432,7 @@ const rectifierData = async (req, res) => {
         group: 0,
         subaddress: id,
       };
-      await axios
-        .post({
+      await axios({
           method: "POST",
           url: `${rectiUrl}/get-data-charger`,
           data: body,
