@@ -11,7 +11,7 @@ const powerModuleRectifier = async (req, res) => {
             "value": 14
         }
         try {
-            await axios({method: 'POST', url: `http://192.168.2.150/set-module-32`, data: body, timeout: 5000})
+            await axios({method: 'POST', url: `${env.RECTI_URL}/set-module-32`, data: body, timeout: 5000})
                 .then((response) => {
                     return res.status(200).json({ code: 200, status: true, msg: 'POWER_MODULE_RECTIFIER_TURN_ON' })
                 })
