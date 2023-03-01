@@ -124,6 +124,100 @@ const cmsData = async (req, res) => {
   }
 };
 
+const totalBatteryVoltage = async (req, res) => {
+  try {
+    console.log("Total Battery Voltage");
+    const data = await M_frame.findAll({
+      where: {
+        frame_sn: req.body.frame_sn,
+      },
+      attributes: ["frame_sn", "status_test"],
+      logging: false,
+    });
+
+    if (data.length > 0) {
+      data.map(async (item, index) => {
+        await axios({
+          method: "GET",
+          url: `${env.BASE_URL}/get-cms-data`,
+          timeout: 10000,
+        })
+          .then((response) => {
+            const store = [];
+            const storeBID = [];
+            const resp = response.data.cms_data;
+
+            // map response data
+            resp.map(async (el, idx) => {
+              if (el.bid > 0) {
+                storeBID.push(el);
+              }
+            });
+
+            // map bid
+            if (storeBID.length > 0) {
+              storeBID.map(async (el, idx) => {
+                if (
+                  item.frame_sn === el.frame_name &&
+                  item.status_test === true
+                ) {
+                  store.push(el);
+                }
+              });
+            } else {
+              return res
+                .status(404)
+                .json({ code: 404, status: false, msg: "BID_NOT_FOUND" });
+            }
+
+            // map store data
+            if (store.length > 0) {
+              store.map(async (el, idx) => {
+                const frameName = el.frame_name;
+                const pack = el.pack;
+                console.log(`Processing frame: ${frameName}`);
+                // sum total battery voltage
+                const initialValue = 0;
+                const sumPack = pack.reduce((accumulator, currentValue) => accumulator + currentValue, initialValue);
+                const milliVolt = 115 * 1000;
+                const totalBattVoltage = Math.round((sumPack / milliVolt) * 100);
+                return res.status(200).json({
+                  code: 200,
+                  status: true,
+                  msg: totalBattVoltage
+                })
+              });
+            } else {
+              return res.status(404).json({
+                code: 404,
+                status: false,
+                msg: "PLEASE_CHECK_FRAME_NAME_AND_STATUS_TEST",
+              });
+            }
+          })
+          .catch((err) => {
+            console.log(`error get cms data ${err}`);
+            if (err.code) {
+              err.code = 500;
+            }
+            return res
+              .status(500)
+              .json({ code: 500, status: false, msg: err.message });
+          });
+      });
+    } else {
+      return res
+        .status(404)
+        .json({ code: 404, status: false, msg: "FRAME_NOT_FOUND_IN_MFRAME" });
+    }
+  } catch (err) {
+    if (err.code) {
+      err.code = 500;
+    }
+    return res.status(500).json({ code: 500, status: false, msg: err.message });
+  }
+}
+
 const checkTemperature = async (req, res) => {
   try {
     const data = await M_frame.findAll({
@@ -784,4 +878,5 @@ export {
   checkTemperature,
   checkBatteryVoltage,
   clearRealtimeTable,
+  totalBatteryVoltage
 };
