@@ -83,24 +83,22 @@ const cmsData = async (req, res) => {
                 const resultDVC = await checkMaxDVC(getDiffVCell);
                 resultDVC
                   ? res.status(500).json({
-                    code: 500,
-                    status: false,
-                    msg: "DIFFERENT_VOLTAGE_CELL_TOO_HIGH",
-                  })
+                      code: 200,
+                      status: false,
+                      msg: "DIFFERENT_VOLTAGE_CELL_TOO_HIGH",
+                    })
                   : res.status(200).json({
-                    code: 200,
-                    status: true,
-                    msg: "DIFFERENT_VOLTAGE_CELL_OK",
-                  });
+                      code: 200,
+                      status: true,
+                      msg: "DIFFERENT_VOLTAGE_CELL_OK",
+                    });
               });
             } else {
-              return res
-                .status(404)
-                .json({
-                  code: 404,
-                  status: false,
-                  msg: "PLEASE_CHECK_FRAME_NAME_AND_STATUS_TEST",
-                });
+              return res.status(404).json({
+                code: 404,
+                status: false,
+                msg: "PLEASE_CHECK_FRAME_NAME_AND_STATUS_TEST",
+              });
             }
           })
           .catch((err) => {
@@ -125,6 +123,100 @@ const cmsData = async (req, res) => {
     return res.status(500).json({ code: 500, status: false, msg: err.message });
   }
 };
+
+const totalBatteryVoltage = async (req, res) => {
+  try {
+    console.log("Total Battery Voltage");
+    const data = await M_frame.findAll({
+      where: {
+        frame_sn: req.body.frame_sn,
+      },
+      attributes: ["frame_sn", "status_test"],
+      logging: false,
+    });
+
+    if (data.length > 0) {
+      data.map(async (item, index) => {
+        await axios({
+          method: "GET",
+          url: `${env.BASE_URL}/get-cms-data`,
+          timeout: 10000,
+        })
+          .then((response) => {
+            const store = [];
+            const storeBID = [];
+            const resp = response.data.cms_data;
+
+            // map response data
+            resp.map(async (el, idx) => {
+              if (el.bid > 0) {
+                storeBID.push(el);
+              }
+            });
+
+            // map bid
+            if (storeBID.length > 0) {
+              storeBID.map(async (el, idx) => {
+                if (
+                  item.frame_sn === el.frame_name &&
+                  item.status_test === true
+                ) {
+                  store.push(el);
+                }
+              });
+            } else {
+              return res
+                .status(404)
+                .json({ code: 404, status: false, msg: "BID_NOT_FOUND" });
+            }
+
+            // map store data
+            if (store.length > 0) {
+              store.map(async (el, idx) => {
+                const frameName = el.frame_name;
+                const pack = el.pack;
+                console.log(`Processing frame: ${frameName}`);
+                // sum total battery voltage
+                const initialValue = 0;
+                const sumPack = pack.reduce((accumulator, currentValue) => accumulator + currentValue, initialValue);
+                const milliVolt = 115 * 1000;
+                const totalBattVoltage = Math.round((sumPack / milliVolt) * 100);
+                return res.status(200).json({
+                  code: 200,
+                  status: true,
+                  msg: totalBattVoltage
+                })
+              });
+            } else {
+              return res.status(404).json({
+                code: 404,
+                status: false,
+                msg: "PLEASE_CHECK_FRAME_NAME_AND_STATUS_TEST",
+              });
+            }
+          })
+          .catch((err) => {
+            console.log(`error get cms data ${err}`);
+            if (err.code) {
+              err.code = 500;
+            }
+            return res
+              .status(500)
+              .json({ code: 500, status: false, msg: err.message });
+          });
+      });
+    } else {
+      return res
+        .status(404)
+        .json({ code: 404, status: false, msg: "FRAME_NOT_FOUND_IN_MFRAME" });
+    }
+  } catch (err) {
+    if (err.code) {
+      err.code = 500;
+    }
+    return res.status(500).json({ code: 500, status: false, msg: err.message });
+  }
+}
 
 const checkTemperature = async (req, res) => {
   try {
@@ -184,7 +276,8 @@ const checkTemperature = async (req, res) => {
                 });
                 if (highTemperature.length > 0) {
                   console.log(
-                    `Frame ${frameName} Temperature is ${highTemperature[0] / 1000
+                    `Frame ${frameName} Temperature is ${
+                      highTemperature[0] / 1000
                     }, cut off charging`
                   );
                   return res.status(500).json({
@@ -202,13 +295,11 @@ const checkTemperature = async (req, res) => {
                 }
               });
             } else {
-              return res
-                .status(404)
-                .json({
-                  code: 404,
-                  status: false,
-                  msg: "PLEASE_CHECK_FRAME_NAME_AND_STATUS_TEST",
-                });
+              return res.status(404).json({
+                code: 404,
+                status: false,
+                msg: "PLEASE_CHECK_FRAME_NAME_AND_STATUS_TEST",
+              });
             }
           })
           .catch((err) => {
@@ -240,7 +331,7 @@ const insertData = async (frameData, dvc) => {
   const diffVCell = JSON.stringify(dvc);
   try {
     const sql = `
-            INSERT INTO ${frameSN} (frame_sn, bid, v1, v2, v3, v4, v5, v6,
+            INSERT INTO "${frameSN}" (frame_sn, bid, v1, v2, v3, v4, v5, v6,
             v7, v8, v9, v10, v11, v12, v13, v14, v15, v16, v17, v18, v19,
             v20, v21, v22, v23, v24, v25, v26, v27, v28, v29, v30, v31,
             v32, v33, v34, v35, v36, v37, v38, v39, v40, v41, v42, v43, v44,
@@ -380,24 +471,22 @@ const checkBatteryVoltage = async (req, res) => {
                 });
                 return maxVoltage.length > 0
                   ? res.status(200).json({
-                    code: 200,
-                    status: false,
-                    msg: "FULLY_CHARGED",
-                  })
+                      code: 200,
+                      status: false,
+                      msg: "FULLY_CHARGED",
+                    })
                   : res.status(200).json({
-                    code: 200,
-                    status: true,
-                    msg: "BATTERY_NOT_FULLY_CHARGED",
-                  });
+                      code: 200,
+                      status: true,
+                      msg: "BATTERY_NOT_FULLY_CHARGED",
+                    });
               });
             } else {
-              return res
-                .status(404)
-                .json({
-                  code: 404,
-                  status: false,
-                  msg: "PLEASE_CHECK_FRAME_NAME_AND_STATUS_TEST",
-                });
+              return res.status(404).json({
+                code: 404,
+                status: false,
+                msg: "PLEASE_CHECK_FRAME_NAME_AND_STATUS_TEST",
+              });
             }
           })
           .catch((err) => {
@@ -432,15 +521,14 @@ const rectifierData = async (req, res) => {
         group: 0,
         subaddress: id,
       };
-      await axios
-        .post({
-          method: "POST",
-          url: `${rectiUrl}/get-data-charger`,
-          data: body,
-          timeout: 10000,
-        })
-        .then(async (res) => {
-          const resp = res.data;
+      await axios({
+        method: "POST",
+        url: `${rectiUrl}/get-data-charger`,
+        data: body,
+        timeout: 10000,
+      })
+        .then(async (response) => {
+          const resp = response.data;
           const module_off = resp.module_off;
           const voltage = resp.voltage;
           const current = resp.current;
@@ -452,11 +540,7 @@ const rectifierData = async (req, res) => {
                 `;
           await db.query(sql, { type: db.QueryTypes.INSERT });
           console.log(`insert data into table rectifier_logger_${id} success`);
-          return res.status(201).json({
-            code: 201,
-            status: true,
-            msg: "INSERT_RECTIFIER_DATA_SUCCESS",
-          });
+          return id === 3 ? res.status(201).json({ code: 201, status: true, msg: "INSERT_RECTIFIER_DATA_SUCCESS" }) : null;
         })
         .catch((err) => {
           if (err.code) {
@@ -486,98 +570,95 @@ const updateResultStatus = async (req, res) => {
     });
 
     if (data.length > 0) {
-      data
-        .map(async (item, index) => {
-          await axios({
-            method: "GET",
-            url: `${env.BASE_URL}/get-cms-data`,
-            timeout: 10000,
-          })
-            .then((response) => {
-              const store = [];
-              const storeBID = [];
-              const resp = response.data.cms_data;
+      data.map(async (item, index) => {
+        await axios({
+          method: "GET",
+          url: `${env.BASE_URL}/get-cms-data`,
+          timeout: 10000,
+        })
+          .then((response) => {
+            const store = [];
+            const storeBID = [];
+            const resp = response.data.cms_data;
 
-              // map response data
-              resp.map(async (el, idx) => {
-                if (el.bid > 0) {
-                  storeBID.push(el);
+            // map response data
+            resp.map(async (el, idx) => {
+              if (el.bid > 0) {
+                storeBID.push(el);
+              }
+            });
+
+            // map bid
+            if (storeBID.length > 0) {
+              storeBID.map(async (el, idx) => {
+                if (
+                  item.frame_sn === el.frame_name &&
+                  item.status_test === true
+                ) {
+                  store.push(el);
                 }
               });
-
-              // map bid
-              if (storeBID.length > 0) {
-                storeBID.map(async (el, idx) => {
-                  if (
-                    item.frame_sn === el.frame_name &&
-                    item.status_test === true
-                  ) {
-                    store.push(el);
-                  }
-                });
-              } else {
-                return res
-                  .status(404)
-                  .json({ code: 404, status: false, msg: "BID_NOT_FOUND" });
-              }
-
-              // map store data
-              if (store.length > 0) {
-                store.map(async (el, idx) => {
-                  const frameName = el.frame_name;
-                  const vcell = el.vcell;
-                  const getDiffVCell = await differentVoltageCell(vcell);
-                  const resultDVC = await checkMaxDVC(getDiffVCell);
-
-                  if (resultDVC) {
-                    const sql = `UPDATE m_frame SET result = 'fail' WHERE frame_sn = '${frameName}'`;
-                    await db.query(sql, {
-                      type: db.QueryTypes.UPDATE,
-                      logging: false,
-                    });
-                    console.log(
-                      `Update status result 'fail' to table m_frame Success`
-                    );
-                    res.status(200).json({
-                      code: 200,
-                      status: true,
-                      msg: "UPDATE_RESULT_STATUS_SUCCESS",
-                    });
-                  } else {
-                    const sql = `UPDATE m_frame SET result = 'pass' WHERE frame_sn = '${frameName}'`;
-                    await db.query(sql, {
-                      type: db.QueryTypes.UPDATE,
-                      logging: false,
-                    });
-                    console.log(
-                      `Update status result 'pass' to table m_frame Success`
-                    );
-                    return res.status(200).json({
-                      code: 200,
-                      status: true,
-                      msg: "UPDATE_RESULT_STATUS_SUCCESS",
-                    });
-                  }
-                });
-              } else {
-                return res
-                  .status(404)
-                  .json({
-                    code: 404,
-                    status: false,
-                    msg: "PLEASE_CHECK_FRAME_NAME_AND_STATUS_TEST",
-                  });
-              }
-            })
-            .catch((err) => {
-              if (err.code) {
-                err.code = 400;
-              }
+            } else {
               return res
-                .status(500)
-                .json({ code: 500, status: false, msg: err.message });
-            })
-        });
+                .status(404)
+                .json({ code: 404, status: false, msg: "BID_NOT_FOUND" });
+            }
+
+            // map store data
+            if (store.length > 0) {
+              store.map(async (el, idx) => {
+                const frameName = el.frame_name;
+                const vcell = el.vcell;
+                const getDiffVCell = await differentVoltageCell(vcell);
+                const resultDVC = await checkMaxDVC(getDiffVCell);
+
+                if (resultDVC) {
+                  const sql = `UPDATE m_frame SET result = 'fail' WHERE frame_sn = '${frameName}'`;
+                  await db.query(sql, {
+                    type: db.QueryTypes.UPDATE,
+                    logging: false,
+                  });
+                  console.log(
+                    `Update status result 'fail' to table m_frame Success`
+                  );
+                  res.status(200).json({
+                    code: 200,
+                    status: true,
+                    msg: "UPDATE_RESULT_STATUS_SUCCESS",
+                  });
+                } else {
+                  const sql = `UPDATE m_frame SET result = 'pass' WHERE frame_sn = '${frameName}'`;
+                  await db.query(sql, {
+                    type: db.QueryTypes.UPDATE,
+                    logging: false,
+                  });
+                  console.log(
+                    `Update status result 'pass' to table m_frame Success`
+                  );
+                  return res.status(200).json({
+                    code: 200,
+                    status: true,
+                    msg: "UPDATE_RESULT_STATUS_SUCCESS",
+                  });
+                }
+              });
+            } else {
+              return res.status(404).json({
+                code: 404,
+                status: false,
+                msg: "PLEASE_CHECK_FRAME_NAME_AND_STATUS_TEST",
+              });
+            }
+          })
+          .catch((err) => {
+            if (err.code) {
+              err.code = 400;
+            }
+            return res
+              .status(500)
+              .json({ code: 500, status: false, msg: err.message });
+          });
+      });
     } else {
       return res
         .status(404)
@@ -655,13 +736,11 @@ const updateStatusTest = async (req, res) => {
                 });
               });
             } else {
-              return res
-                .status(404)
-                .json({
-                  code: 404,
-                  status: false,
-                  msg: "PLEASE_CHECK_FRAME_NAME_AND_STATUS_TEST",
-                });
+              return res.status(404).json({
+                code: 404,
+                status: false,
+                msg: "PLEASE_CHECK_FRAME_NAME_AND_STATUS_TEST",
+              });
             }
           })
           .catch((err) => {
@@ -671,7 +750,7 @@ const updateStatusTest = async (req, res) => {
             return res
               .status(500)
               .json({ code: 500, status: false, msg: err.message });
-          })
+          });
       });
     } else {
       return res
@@ -750,13 +829,11 @@ const updateStatusChecking = async (req, res) => {
                 });
               });
             } else {
-              return res
-                .status(404)
-                .json({
-                  code: 404,
-                  status: false,
-                  msg: "PLEASE_CHECK_FRAME_NAME_AND_STATUS_TEST",
-                });
+              return res.status(404).json({
+                code: 404,
+                status: false,
+                msg: "PLEASE_CHECK_FRAME_NAME_AND_STATUS_TEST",
+              });
             }
           })
           .catch((err) => {
@@ -766,7 +843,7 @@ const updateStatusChecking = async (req, res) => {
             return res
               .status(500)
               .json({ code: 500, status: false, msg: err.message });
-          })
+          });
       });
     } else {
       return res
@@ -779,7 +856,7 @@ const updateStatusChecking = async (req, res) => {
     }
     return res.status(500).json({ code: 500, status: false, msg: err.message });
   }
-}
+};
 
 const validateTime = async (req, res) => {
   const now = moment().format("HH:mm");
@@ -787,8 +864,8 @@ const validateTime = async (req, res) => {
   return now > death
     ? res.status(200).json({ code: 200, status: true, msg: "TIME_IS_OVER" })
     : res
-      .status(200)
-      .json({ code: 200, status: false, msg: "TIME_IS_NOT_OVER" });
+        .status(200)
+        .json({ code: 200, status: false, msg: "TIME_IS_NOT_OVER" });
 };
 
 export {
@@ -801,4 +878,5 @@ export {
   checkTemperature,
   checkBatteryVoltage,
   clearRealtimeTable,
+  totalBatteryVoltage
 };

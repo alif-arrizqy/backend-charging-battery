@@ -11,7 +11,7 @@ const powerModuleRectifier = async (req, res) => {
             "value": 14
         }
         try {
-            await axios.post({method: 'POST', url: `${env.RECTI_URL}/set-module-32`, data: body, timeout: 5000})
+            await axios({method: 'POST', url: `${env.RECTI_URL}/set-module-32`, data: body, timeout: 5000})
                 .then((response) => {
                     return res.status(200).json({ code: 200, status: true, msg: 'POWER_MODULE_RECTIFIER_TURN_ON' })
                 })
@@ -26,7 +26,7 @@ const powerModuleRectifier = async (req, res) => {
             "group": 0,
             "value": 0
         }
-        await axios.post({method: 'POST', url: `${env.RECTI_URL}/set-module-32`, data: body, timeout: 5000})
+        await axios({method: 'POST', url: `${env.RECTI_URL}/set-module-32`, data: body, timeout: 5000})
             .then((response) => {
                 return res.status(200).json({ code: 200, status: true, msg: 'POWER_MODULE_RECTIFIER_TURN_OFF' })
             })
@@ -44,7 +44,7 @@ const setRectifierCurrent = async (req, res) => {
         'subaddress': 0,
         'current': currValue*1000
     }
-    await axios.post({method: 'POST', url: `${env.RECTI_URL}/set-current`, data: body, timeout: 5000})
+    await axios({method: 'POST', url: `${env.RECTI_URL}/set-current`, data: body, timeout: 5000})
         .then((response) => {
             return res.status(200).json({ code: 200, status: true, msg: `SET_RECTIFIER_CURRENT_TO_${currValue}A` })
         })
@@ -63,7 +63,7 @@ const setRectifierVoltage = async (req, res) => {
         'subaddress': 0,
         'voltage': result
     }
-    await axios.post({method: 'POST', url: `${env.RECTI_URL}/set-voltage`, data: body, timeout: 5000})
+    await axios({method: 'POST', url: `${env.RECTI_URL}/set-voltage`, data: body, timeout: 5000})
         .then((response) => {
             return res.status(200).json({ code: 200, status: true, msg: `SET_RECTIFIER_VOLTAGE_TO_${result}V` })
         })
