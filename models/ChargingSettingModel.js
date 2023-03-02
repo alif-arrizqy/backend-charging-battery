@@ -4,15 +4,23 @@ import db from "../config/dataBase.js";
 const { DataTypes } = Sequelize;
 
 const M_setting = db.define(
-  "m_setting",
+  "charging_setting",
   {
+    max_voltage_cell: {
+      type: Sequelize.INTEGER,
+      unique: false,
+    },
+    total_cell: {
+      type: Sequelize.INTEGER,
+      unique: false,
+    },
     recti_voltage: {
-      type: Sequelize.BOOLEAN,
+      type: Sequelize.INTEGER,
       unique: false,
     },
 
     recti_current: {
-      type: Sequelize.BOOLEAN,
+      type: Sequelize.INTEGER,
       unique: false,
     },
 
