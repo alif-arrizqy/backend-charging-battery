@@ -83,7 +83,7 @@ const cmsData = async (req, res) => {
                 const resultDVC = await checkMaxDVC(getDiffVCell);
                 resultDVC
                   ? res.status(500).json({
-                      code: 200,
+                      code: 500,
                       status: false,
                       msg: "DIFFERENT_VOLTAGE_CELL_TOO_HIGH",
                     })

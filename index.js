@@ -12,7 +12,6 @@ import DataCollectionRoute from "./routes/DataCollectionRoute.js";
 import RealTimeRoute from "./routes/RealTimeRoute.js";
 import ChargingRoute from "./routes/ChargingRoute.js";
 import RectifierRoute from "./routes/RectifierRoute.js";
-import M_setting from "./routes/M_settingRoute.js";
 
 const PORT = process.env.PORT || 3001;
 
@@ -31,6 +30,5 @@ app.use(DataCollectionRoute);
 app.use(RealTimeRoute);
 app.use(ChargingRoute);
 app.use(RectifierRoute);
-app.use(M_setting);
 
 app.listen(PORT, () => console.log(`SERVER UP AND RUNNING ${PORT}`));
