@@ -196,9 +196,10 @@ const totalBatteryVoltage = async (req, res) => {
                     msg: "SETTING_NOT_FOUND",
                   });
                 } else {
-                  response.map((item) => {
-                    const maxVolt = item.max_voltage_cell;
-                    const minVolt = item.min_voltage_cell;
+                  dataVoltage.map((item) => {
+                    console.log(item);
+                    const maxVolt = item.max_voltage_cell * item.total_cell;
+                    const minVolt = item.min_voltage_cell * item.total_cell;
                     // sum total battery voltage
                     const initialValue = 0;
                     const sumPack = pack.reduce((accumulator, currentValue) => accumulator + currentValue, initialValue);
