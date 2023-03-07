@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import moment from "moment";
 import realtime from "../models/RealTimeModel.js";
 import M_frame from "../models/M_frameModel.js";
+import ChgSettingModel from "../models/ChargingSettingModel.js";
 import db from "../config/dataBase.js";
 import configCharging from "../config/configCharging.js";
 const env = dotenv.config().parsed;
@@ -176,16 +177,40 @@ const totalBatteryVoltage = async (req, res) => {
                 const frameName = el.frame_name;
                 const pack = el.pack;
                 console.log(`Processing frame: ${frameName}`);
-                // sum total battery voltage
-                const initialValue = 0;
-                const sumPack = pack.reduce((accumulator, currentValue) => accumulator + currentValue, initialValue);
-                const milliVolt = 115 * 1000;
-                const totalBattVoltage = Math.round((sumPack / milliVolt) * 100);
-                return res.status(200).json({
-                  code: 200,
-                  status: true,
-                  msg: totalBattVoltage
-                })
+
+                // get min and max voltage from database
+                const dataVoltage = await ChgSettingModel.findAll({
+                  attributes: [
+                    "max_voltage_cell",
+                    "min_voltage_cell",
+                    "total_cell",
+                    "recti_voltage",
+                    "recti_current",
+                  ],
+                  logging: false,
+                });
+                if (dataVoltage.length === 0) {
+                  return res.status(404).json({
+                    code: 404,
+                    status: false,
+                    msg: "SETTING_NOT_FOUND",
+                  });
+                } else {
+                  response.map((item) => {
+                    const maxVolt = item.max_voltage_cell;
+                    const minVolt = item.min_voltage_cell;
+                    // sum total battery voltage
+                    const initialValue = 0;
+                    const sumPack = pack.reduce((accumulator, currentValue) => accumulator + currentValue, initialValue);
+
+                    const totalBattVoltage = Math.round((sumPack - minVolt) / (maxVolt - minVolt) * 100);
+                    return res.status(200).json({
+                      code: 200,
+                      status: true,
+                      msg: totalBattVoltage
+                    })
+                  });
+                }
               });
             } else {
               return res.status(404).json({

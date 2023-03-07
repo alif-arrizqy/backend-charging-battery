@@ -10,6 +10,10 @@ const M_setting = db.define(
       type: Sequelize.INTEGER,
       unique: false,
     },
+    min_voltage_cell: {
+      type: Sequelize.INTEGER,
+      unique: false,
+    },
     total_cell: {
       type: Sequelize.INTEGER,
       unique: false,

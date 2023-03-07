@@ -59,23 +59,51 @@ const powerModuleRectifier = async (req, res) => {
   }
 };
 
-const insertSetting = async (req, res) => {
-  const data = await ChgSettingModel.findAll({
-    attributes: [
-      "max_voltage_cell",
-      "total_cell",
-      "recti_voltage",
-      "recti_current",
-    ],
-    logging: false,
-  });
-
-  if (data.length === 0) {
-    await ChgSettingModel.create({
-      max_voltage_cell: 3600,
-      total_cell: 32,
-      recti_voltage: 115200,
-      recti_current: 70000,
+const insertDefaultSetting = async (req, res) => {
+  try {
+    const data = await ChgSettingModel.findAll({
+      attributes: [
+        "max_voltage_cell",
+        "min_voltage_cell",
+        "total_cell",
+        "recti_voltage",
+        "recti_current",
+      ],
+      logging: false,
+    });
+  
+    if (data.length === 0) {
+      await ChgSettingModel.create({
+        max_voltage_cell: 3600,
+        min_voltage_cell: 3000,
+        total_cell: 32,
+        recti_voltage: 115200,
+        recti_current: 40000,
+      });
+      return res.status(200).json({
+        code: 200,
+        status: true,
+        msg: {
+          info: "INSERT_DEFAULT_SETTING_SUCCESS",
+          max_voltage_cell: 3600,
+          min_voltage_cell: 3000,
+          total_cell: 32,
+          recti_voltage: 115200,
+          recti_current: 40000,
+        }
+      });
+    } else {
+      return res.status(200).json({
+        code: 200,
+        status: true,
+        msg: "SETTING_ALREADY_EXIST",
+      });
+    }
+  } catch {
+    return res.status(500).json({
+      code: 500,
+      status: false,
+      msg: "INSERT_SETTING_FAILED",
     });
   }
 };
@@ -85,6 +113,7 @@ const getSetting = async (req, res) => {
     const response = await ChgSettingModel.findAll({
       attributes: [
         "max_voltage_cell",
+        "min_voltage_cell",
         "total_cell",
         "recti_voltage",
         "recti_current",
@@ -105,6 +134,7 @@ const getSetting = async (req, res) => {
           status: true,
           msg: {
             max_voltage_cell: item.max_voltage_cell,
+            min_voltage_cell: item.min_voltage_cell,
             total_cell: item.total_cell,
             recti_voltage: item.recti_voltage,
             recti_current: item.recti_current,
@@ -251,12 +281,13 @@ const setRectifierCurrent = async (req, res) => {
 
 const setRectifierVoltage = async (req, res) => {
   const maxVoltCell = parseInt(req.body.maxVoltage);
+  const minVoltCell = parseInt(req.body.minVoltage);
   const totalCell = parseInt(req.body.totalCell);
   const resultVoltage = maxVoltCell * totalCell;
 
   try {
     const data = await ChgSettingModel.findAll({
-      attributes: ["max_voltage_cell", "total_cell", "recti_voltage"],
+      attributes: ["max_voltage_cell", "min_voltage_cell", "total_cell", "recti_voltage"],
       logging: false,
     });
 
@@ -270,6 +301,7 @@ const setRectifierVoltage = async (req, res) => {
       data.map(async (item) => {
         const rectiVoltage = item.recti_voltage;
         const maxVolt = item.max_voltage_cell;
+        const minVolt = item.min_voltage_cell;
         const total = item.total_cell;
 
         if (isNaN(resultVoltage)) {
@@ -307,7 +339,7 @@ const setRectifierVoltage = async (req, res) => {
         }
         else if (rectiVoltage !== resultVoltage) {
           // / update new value to database
-          const sql = `UPDATE charging_setting SET recti_voltage = ${resultVoltage}, max_voltage_cell = ${maxVoltCell}, total_cell = ${totalCell}`;
+          const sql = `UPDATE charging_setting SET recti_voltage = ${resultVoltage}, max_voltage_cell = ${maxVoltCell}, min_voltage_cell = ${minVoltCell}, total_cell = ${totalCell}`;
           await db.query(sql, { type: db.QueryTypes.UPDATE, logging: false });
 
           // development
@@ -387,5 +419,5 @@ export {
   setRectifierCurrent,
   setRectifierVoltage,
   getSetting,
-  insertSetting,
+  insertDefaultSetting,
 };

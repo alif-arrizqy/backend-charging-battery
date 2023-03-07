@@ -13,8 +13,6 @@ import RealTimeRoute from "./routes/RealTimeRoute.js";
 import ChargingRoute from "./routes/ChargingRoute.js";
 import RectifierRoute from "./routes/RectifierRoute.js";
 
-import {insertSetting} from "./controllers/RectifierController.js"
-await insertSetting()
 
 const PORT = process.env.PORT || 3001;
 
