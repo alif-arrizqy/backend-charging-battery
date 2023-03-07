@@ -172,7 +172,7 @@ const setRectifierCurrent = async (req, res) => {
                 .json({ code: 500, status: false, msg: error.code });
             });
         }
-        if (rectiCurrent !== currValue) {
+        else if (rectiCurrent !== currValue) {
           // update new value to database
           const sql = `UPDATE charging_setting SET recti_current = ${currValue}`;
           await db.query(sql, { type: db.QueryTypes.UPDATE, logging: false });
@@ -305,7 +305,7 @@ const setRectifierVoltage = async (req, res) => {
                 .json({ code: 500, status: false, msg: error.code });
             });
         }
-        if (rectiVoltage !== resultVoltage) {
+        else if (rectiVoltage !== resultVoltage) {
           // / update new value to database
           const sql = `UPDATE charging_setting SET recti_voltage = ${resultVoltage}, max_voltage_cell = ${maxVoltCell}, total_cell = ${totalCell}`;
           await db.query(sql, { type: db.QueryTypes.UPDATE, logging: false });
