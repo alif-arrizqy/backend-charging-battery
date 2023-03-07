@@ -83,8 +83,8 @@ const insertDefaultSetting = async (req, res) => {
       return res.status(200).json({
         code: 200,
         status: true,
-        msg: {
-          info: "INSERT_DEFAULT_SETTING_SUCCESS",
+        msg: "INSERT_DEFAULT_SETTING_SUCCESS",
+        data: {
           max_voltage_cell: 3600,
           min_voltage_cell: 3000,
           total_cell: 32,
