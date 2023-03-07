@@ -42,4 +42,5 @@ export default M_frame;
 
 (async () => {
   await db.sync({ alter: true });
+  console.log("All models were synchronized successfully.");
 })();

@@ -12,6 +12,6 @@ router.put('/update-status-checking', updateStatusChecking)
 router.get('/validate-time', validateTime)
 router.post('/check-temperature', checkTemperature)
 router.get('/clear-realtime-table', clearRealtimeTable)
-router.get('/total-battery-valtage', totalBatteryVoltage)
+router.post('/total-battery-valtage', totalBatteryVoltage)
 
 export default router

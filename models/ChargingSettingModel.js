@@ -18,12 +18,10 @@ const M_setting = db.define(
       type: Sequelize.INTEGER,
       unique: false,
     },
-
     recti_current: {
       type: Sequelize.INTEGER,
       unique: false,
     },
-
     createdAt: {
       type: Sequelize.DATE(3),
       allowNull: false,
