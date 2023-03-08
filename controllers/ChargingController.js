@@ -39,7 +39,7 @@ const cmsData = async (req, res) => {
         await axios({
           method: "GET",
           url: `${env.BASE_URL}/get-cms-data`,
-          timeout: 10000,
+          timeout: 50000,
         })
           .then((response) => {
             const store = [];
@@ -141,7 +141,7 @@ const totalBatteryVoltage = async (req, res) => {
         await axios({
           method: "GET",
           url: `${env.BASE_URL}/get-cms-data`,
-          timeout: 10000,
+          timeout: 50000,
         })
           .then((response) => {
             const store = [];
@@ -202,14 +202,19 @@ const totalBatteryVoltage = async (req, res) => {
                     const minVolt = item.min_voltage_cell * item.total_cell;
                     // sum total battery voltage
                     const initialValue = 0;
-                    const sumPack = pack.reduce((accumulator, currentValue) => accumulator + currentValue, initialValue);
+                    const sumPack = pack.reduce(
+                      (accumulator, currentValue) => accumulator + currentValue,
+                      initialValue
+                    );
 
-                    const totalBattVoltage = Math.round((sumPack - minVolt) / (maxVolt - minVolt) * 100);
+                    const totalBattVoltage = Math.round(
+                      ((sumPack - minVolt) / (maxVolt - minVolt)) * 100
+                    );
                     return res.status(200).json({
                       code: 200,
                       status: true,
-                      msg: totalBattVoltage
-                    })
+                      msg: totalBattVoltage,
+                    });
                   });
                 }
               });
@@ -242,7 +247,7 @@ const totalBatteryVoltage = async (req, res) => {
     }
     return res.status(500).json({ code: 500, status: false, msg: err.message });
   }
-}
+};
 
 const checkTemperature = async (req, res) => {
   try {
@@ -259,7 +264,7 @@ const checkTemperature = async (req, res) => {
         await axios({
           method: "GET",
           url: `${env.BASE_URL}/get-cms-data`,
-          timeout: 10000,
+          timeout: 50000,
         })
           .then((response) => {
             const store = [];
@@ -454,7 +459,7 @@ const checkBatteryVoltage = async (req, res) => {
         await axios({
           method: "GET",
           url: `${env.BASE_URL}/get-cms-data`,
-          timeout: 10000,
+          timeout: 50000,
         })
           .then((response) => {
             const store = [];
@@ -551,7 +556,7 @@ const rectifierData = async (req, res) => {
         method: "POST",
         url: `${rectiUrl}/get-data-charger`,
         data: body,
-        timeout: 10000,
+        timeout: 50000,
       })
         .then(async (response) => {
           const resp = response.data;
@@ -566,7 +571,13 @@ const rectifierData = async (req, res) => {
                 `;
           await db.query(sql, { type: db.QueryTypes.INSERT });
           console.log(`insert data into table rectifier_logger_${id} success`);
-          return id === 3 ? res.status(201).json({ code: 201, status: true, msg: "INSERT_RECTIFIER_DATA_SUCCESS" }) : null;
+          return id === 3
+            ? res.status(201).json({
+                code: 201,
+                status: true,
+                msg: "INSERT_RECTIFIER_DATA_SUCCESS",
+              })
+            : null;
         })
         .catch((err) => {
           if (err.code) {
@@ -600,7 +611,7 @@ const updateResultStatus = async (req, res) => {
         await axios({
           method: "GET",
           url: `${env.BASE_URL}/get-cms-data`,
-          timeout: 10000,
+          timeout: 50000,
         })
           .then((response) => {
             const store = [];
@@ -713,7 +724,7 @@ const updateStatusTest = async (req, res) => {
         await axios({
           method: "GET",
           url: `${env.BASE_URL}/get-cms-data`,
-          timeout: 10000,
+          timeout: 50000,
         })
           .then((response) => {
             const store = [];
@@ -806,7 +817,7 @@ const updateStatusChecking = async (req, res) => {
         await axios({
           method: "GET",
           url: `${env.BASE_URL}/get-cms-data`,
-          timeout: 10000,
+          timeout: 50000,
         })
           .then((response) => {
             const store = [];
@@ -904,5 +915,5 @@ export {
   checkTemperature,
   checkBatteryVoltage,
   clearRealtimeTable,
-  totalBatteryVoltage
+  totalBatteryVoltage,
 };
