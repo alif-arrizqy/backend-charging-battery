@@ -12,6 +12,8 @@ import DataCollectionRoute from "./routes/DataCollectionRoute.js";
 import RealTimeRoute from "./routes/RealTimeRoute.js";
 import ChargingRoute from "./routes/ChargingRoute.js";
 import RectifierRoute from "./routes/RectifierRoute.js";
+import AuthRoute from "./routes/AuthRoute.js";
+import UserRoute from "./routes/UserRoute.js";
 
 
 const PORT = process.env.PORT || 3001;
@@ -31,5 +33,7 @@ app.use(DataCollectionRoute);
 app.use(RealTimeRoute);
 app.use(ChargingRoute);
 app.use(RectifierRoute);
+app.use(AuthRoute);
+app.use(UserRoute);
 
 app.listen(PORT, () => console.log(`SERVER UP AND RUNNING ${PORT}`));
