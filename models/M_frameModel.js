@@ -18,6 +18,10 @@ const M_frame = db.define(
       type: Sequelize.BOOLEAN,
       unique: false,
     },
+    test_count: {
+      type: Sequelize.INTEGER,
+      unique: false,
+    },
     result: {
       type: Sequelize.STRING,
       unique: false,
