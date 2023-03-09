@@ -1,0 +1,37 @@
+version: '3.7'
+
+services:
+  backend-charging:
+    image: backend-charging
+    build:
+      dockerfile: Dockerfile
+    container_name: backend-charging
+    restart: unless-stopped
+    volumes:
+      - ./:/usr/src/app
+      - .node_modules:/usr/src/app/node_modules
+    networks:
+      - backend-charging-talis30
+    environment:
+      NODE_ENV: production
+    ports:
+      - 5003:5003
+    
+  db-backend-charging:
+    image: postgres:14.0-alpine
+    restart: always
+    volumes:
+      - backend-charging-talis30-data:/var/lib/postgresql/data
+    ports:
+      - "${DB_PORT_EXPOSE}:5432"
+    env_file:
+      - ./.env
+    networks:
+      - backend-charging-talis30
+
+networks:
+  backend-charging-talis30:
+
+volumes:
+  node_modules:
+  backend-charging-talis30-data:
