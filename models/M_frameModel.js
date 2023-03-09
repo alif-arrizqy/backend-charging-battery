@@ -22,6 +22,10 @@ const M_frame = db.define(
       type: Sequelize.INTEGER,
       unique: false,
     },
+    duration_charging: {
+      type: Sequelize.STRING,
+      unique: false,
+    },
     result: {
       type: Sequelize.STRING,
       unique: false,

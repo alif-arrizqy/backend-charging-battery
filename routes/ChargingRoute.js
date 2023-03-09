@@ -1,5 +1,5 @@
 import express from 'express'
-import { cmsData, rectifierData, totalBatteryVoltage, updateStatusTest, updateResultStatus, updateStatusChecking, validateTime, checkTemperature, checkBatteryVoltage, clearRealtimeTable} from '../controllers/ChargingController.js'
+import { cmsData, rectifierData, totalBatteryVoltage, updateStatusTest, updateResultStatus, updateStatusChecking, validateTime, checkTemperature, checkBatteryVoltage, clearRealtimeTable, longBatteryChargingTime} from '../controllers/ChargingController.js'
 
 var router = express.Router()
 
@@ -13,5 +13,6 @@ router.get('/validate-time', validateTime)
 router.post('/check-temperature', checkTemperature)
 router.get('/clear-realtime-table', clearRealtimeTable)
 router.post('/total-battery-valtage', totalBatteryVoltage)
+router.post('/charging-time', longBatteryChargingTime)
 
 export default router
