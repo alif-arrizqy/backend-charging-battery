@@ -12,7 +12,7 @@ const clearRealtimeTable = async (req, res) => {
   try {
     const del = await realtime.destroy({ truncate: true });
     if (!del) {
-      throw { code: 500, message: "CLEAR_TABLE_FAILED" };
+      return res.status(500).json({ code: 500, message: "CLEAR_TABLE_FAILED" });
     }
 
     return res
@@ -908,19 +908,34 @@ const longBatteryChargingTime = async (req, res) => {
     data.map(async (item, index) => {
       const createdAt = moment(item.createdAt).format("YYYY-MM-DD HH:mm:ss");
       const now = moment().format("YYYY-MM-DD HH:mm:ss");
-      const diff = moment.duration(moment(now).diff(moment(createdAt)))
-      
-      const duration = moment.duration(diff, 'hours');
+      const diff = moment.duration(moment(now).diff(moment(createdAt)));
+
+      const duration = moment.duration(diff, "hours");
       const n = 24 * 60 * 60 * 1000;
       const days = Math.floor(duration / n);
-      const str = moment.utc(duration % n).format('H [h] mm [min] ss [s]');
-      const chargingDuration = `${days > 0 ? `${days} ${days == 1 ? 'day' : 'days'} ` : ''}${str}`
+      const str = moment.utc(duration % n).format("H [h] mm [min] ss [s]");
+      const chargingDuration = `${
+        days > 0 ? `${days} ${days == 1 ? "day" : "days"} ` : ""
+      }${str}`;
       // console.log(`${days > 0 ? `${days} ${days == 1 ? 'day' : 'days'} ` : ''}${str}`);
 
       // save to database
       const sql = `UPDATE m_frame SET duration_charging = '${chargingDuration}' WHERE frame_sn = '${req.body.frame_sn}'`;
       await db.query(sql, {
         type: db.QueryTypes.UPDATE,
+        logging: false,
+      });
+
+      return res.status(200).json({
+        code: 200,
+        status: true,
+        msg: "GET_LONG_BATTERY_CHARGING_TIME_SUCCESS",
+        data: chargingDuration,
+      });
+    });
+  }
+};
+
 const validateTime = async (req, res) => {
   const now = moment().format("HH:mm");
   const death = "16:58";
@@ -942,5 +957,5 @@ export {
   checkBatteryVoltage,
   clearRealtimeTable,
   totalBatteryVoltage,
-};
+  longBatteryChargingTime,
 };
