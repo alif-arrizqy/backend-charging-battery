@@ -2,7 +2,7 @@ import { Sequelize } from "sequelize";
 import dotenv from "dotenv";
 const env = dotenv.config().parsed;
 
-const username = process.env.USER;
+const username = 'sundaya';
 const password = process.env.PASSWORD;
 const database = process.env.DATABASE;
 const host = process.env.DB_HOST;
