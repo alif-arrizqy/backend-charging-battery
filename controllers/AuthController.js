@@ -8,9 +8,9 @@ const register = async (req, res) => {
         const fullname = req.body.fullname;
 
         // is required fields
-        if (!username) return res.status(428).json({ code: 428, message: "USERNAME_IS_REQUIRED" });
-        if (!password) return res.status(428).json({ code: 428, message: "PASSWORD_IS_REQUIRED" });
-        if (!fullname) return res.status(428).json({ code: 428, message: "FULLNAME_IS_REQUIRED" });
+        if (!username) return res.status(428).json({ code: 428, msg: "USERNAME_IS_REQUIRED" });
+        if (!password) return res.status(428).json({ code: 428, msg: "PASSWORD_IS_REQUIRED" });
+        if (!fullname) return res.status(428).json({ code: 428, msg: "FULLNAME_IS_REQUIRED" });
 
         // check if username already exist
         const isExist = await userModel.findOne({
@@ -56,7 +56,7 @@ const register = async (req, res) => {
         res.status(500).json({
             code: 500,
             status: false,
-            msg: error.message,
+            msg: error.msg,
         });
     }
 };
@@ -67,8 +67,8 @@ const login = async (req, res) => {
         const password = req.body.password;
 
         // is required fields
-        if (!username) return res.status(428).json({ code: 428, message: "USERNAME_IS_REQUIRED" });
-        if (!password) return res.status(428).json({ code: 428, message: "PASSWORD_IS_REQUIRED" });
+        if (!username) return res.status(428).json({ code: 428, msg: "USERNAME_IS_REQUIRED" });
+        if (!password) return res.status(428).json({ code: 428, msg: "PASSWORD_IS_REQUIRED" });
 
         // check if username exist
         const isExist = await userModel.findOne({
@@ -90,7 +90,7 @@ const login = async (req, res) => {
             return res.status(403).json({
                 code: 403,
                 status: false,
-                message: "PASSWORD_NOT_MATCH",
+                msg: "PASSWORD_NOT_MATCH",
             });
         }
 
