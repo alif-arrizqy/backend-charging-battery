@@ -158,10 +158,7 @@ const totalBatteryVoltage = async (req, res) => {
             // map bid
             if (storeBID.length > 0) {
               storeBID.map(async (el, idx) => {
-                if (
-                  item.frame_sn === el.frame_name &&
-                  item.status_test === true
-                ) {
+                if (item.frame_sn === el.frame_name) {
                   store.push(el);
                 }
               });
