@@ -893,42 +893,84 @@ const updateStatusChecking = async (req, res) => {
 };
 
 const longBatteryChargingTime = async (req, res) => {
+  const startTime = req.body.date_start;
+  const endTime = req.body.date_end;
+  const frameSN = req.body.frame_sn;
+
+  // is required fields
+  if (!startTime) { return res.status(400).json({ code: 400, status: false, msg: "DATE_START_REQUIRED" }); }
+  if (!endTime) { return res.status(400).json({ code: 400, status: false, msg: "DATE_END_REQUIRED" }); }
+  if (!frameSN) { return res.status(400).json({ code: 400, status: false, msg: "FRAME_SN_REQUIRED" }); }
+
   const data = await M_frame.findAll({
     where: {
-      frame_sn: req.body.frame_sn,
+      frame_sn: frameSN
     },
-    attributes: ["createdAt"],
+    attributes: ["duration_charging"],
     logging: false,
   });
 
   if (data.length > 0) {
-    data.map(async (item, index) => {
-      const createdAt = moment(item.createdAt).format("YYYY-MM-DD HH:mm:ss");
-      const now = moment().format("YYYY-MM-DD HH:mm:ss");
-      const diff = moment.duration(moment(now).diff(moment(createdAt)));
+    data.map(async (item, index) => {    
+      const getDurationChg = item.duration_charging;
 
-      const duration = moment.duration(diff, "hours");
-      const n = 24 * 60 * 60 * 1000;
-      const days = Math.floor(duration / n);
-      const str = moment.utc(duration % n).format("H [h] mm [min] ss [s]");
-      const chargingDuration = `${
-        days > 0 ? `${days} ${days == 1 ? "day" : "days"} ` : ""
-      }${str}`;
-      // console.log(`${days > 0 ? `${days} ${days == 1 ? 'day' : 'days'} ` : ''}${str}`);
+      if (getDurationChg === null) {
+        const startChgTime = moment(startTime, "YYYY-MM-DD HH:mm:ss").valueOf()
+        const endChgTime = moment(endTime, "YYYY-MM-DD HH:mm:ss").valueOf()
+        const diff = moment.duration(moment(endChgTime).diff(moment(startChgTime)));
+        const duration = moment.duration(diff, "hours");
+        const n = 24 * 60 * 60 * 1000;
+        // const chargingDuration = moment.utc(duration % n).format("H [h] mm [min] ss [s]");
+        const chargingDuration = moment.utc(duration % n).format("HH:mm:ss");
 
-      // save to database
-      const sql = `UPDATE m_frame SET duration_charging = '${chargingDuration}' WHERE frame_sn = '${req.body.frame_sn}'`;
-      await db.query(sql, {
-        type: db.QueryTypes.UPDATE,
-        logging: false,
-      });
+        // save to database
+        const sql = `UPDATE m_frame SET duration_charging = '${chargingDuration}' WHERE frame_sn = '${req.body.frame_sn}'`;
+        await db.query(sql, {
+          type: db.QueryTypes.UPDATE,
+          logging: false,
+        });
 
-      return res.status(200).json({
-        code: 200,
-        status: true,
-        msg: "GET_LONG_BATTERY_CHARGING_TIME_SUCCESS",
-        data: chargingDuration,
-      });
+        return res.status(200).json({
+          code: 200,
+          status: true,
+          msg: "GET_LONG_BATTERY_CHARGING_TIME_SUCCESS",
+          data: chargingDuration,
+        });
+      } else {
+        const startChgTime = moment(startTime, "YYYY-MM-DD HH:mm:ss").valueOf()
+        const endChgTime = moment(endTime, "YYYY-MM-DD HH:mm:ss").valueOf()
+        const diff = moment.duration(moment(endChgTime).diff(moment(startChgTime)));
+        const duration = moment.duration(diff, "hours");
+        const n = 24 * 60 * 60 * 1000;
+        // const chargingDuration = moment.utc(duration % n).format("H [h] mm [min] ss [s]");
+        const chargingDuration = moment.utc(duration % n).format("HH:mm:ss");
+
+        // last duration charging + new duration charging
+        const lastDurationChg = moment(getDurationChg, "HH:mm:ss").valueOf()
+        const newDurationChg = moment(chargingDuration, "HH:mm:ss").valueOf()
+        console.log(moment(lastDurationChg).format("HH:mm:ss"));
+        console.log(moment(newDurationChg).format("HH:mm:ss"));
+
+        const totalDurationChg = moment(lastDurationChg).add(newDurationChg) / 60
+        console.log(moment(totalDurationChg).format("HH:mm:ss"));
+
+
+
+        // // save to database
+        // const sql = `UPDATE m_frame SET duration_charging = '${chargingDuration}' WHERE frame_sn = '${req.body.frame_sn}'`;
+        // await db.query(sql, {
+        //   type: db.QueryTypes.UPDATE,
+        //   logging: false,
+        // });
+        return res.status(200).json({
+          code: 200,
+          status: true,
+          msg: "GET_LONG_BATTERY_CHARGING_TIME_SUCCESS",
+          data: totalDurationChg,
+        });
+      }
+
+
     });
   }
 };
