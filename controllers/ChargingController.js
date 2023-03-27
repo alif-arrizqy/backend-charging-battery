@@ -6,6 +6,7 @@ import M_frame from "../models/M_frameModel.js";
 import ChgSettingModel from "../models/ChargingSettingModel.js";
 import db from "../config/dataBase.js";
 import configCharging from "../config/configCharging.js";
+import { add, str } from "timelite/time.js"
 const env = dotenv.config().parsed;
 
 const clearRealtimeTable = async (req, res) => {
@@ -915,12 +916,13 @@ const longBatteryChargingTime = async (req, res) => {
       const getDurationChg = item.duration_charging;
 
       if (getDurationChg === null) {
+        // duration charging
         const startChgTime = moment(startTime, "YYYY-MM-DD HH:mm:ss").valueOf()
         const endChgTime = moment(endTime, "YYYY-MM-DD HH:mm:ss").valueOf()
         const diff = moment.duration(moment(endChgTime).diff(moment(startChgTime)));
         const duration = moment.duration(diff, "hours");
         const n = 24 * 60 * 60 * 1000;
-        // const chargingDuration = moment.utc(duration % n).format("H [h] mm [min] ss [s]");
+        const responseChargingDuration = moment.utc(duration % n).format("H [h] mm [min] ss [s]");
         const chargingDuration = moment.utc(duration % n).format("HH:mm:ss");
 
         // save to database
@@ -934,39 +936,49 @@ const longBatteryChargingTime = async (req, res) => {
           code: 200,
           status: true,
           msg: "GET_LONG_BATTERY_CHARGING_TIME_SUCCESS",
-          data: chargingDuration,
+          data: responseChargingDuration,
         });
       } else {
+        // calculate new duration charging
         const startChgTime = moment(startTime, "YYYY-MM-DD HH:mm:ss").valueOf()
         const endChgTime = moment(endTime, "YYYY-MM-DD HH:mm:ss").valueOf()
         const diff = moment.duration(moment(endChgTime).diff(moment(startChgTime)));
         const duration = moment.duration(diff, "hours");
         const n = 24 * 60 * 60 * 1000;
-        // const chargingDuration = moment.utc(duration % n).format("H [h] mm [min] ss [s]");
         const chargingDuration = moment.utc(duration % n).format("HH:mm:ss");
 
         // last duration charging + new duration charging
-        const lastDurationChg = moment(getDurationChg, "HH:mm:ss").valueOf()
-        const newDurationChg = moment(chargingDuration, "HH:mm:ss").valueOf()
-        console.log(moment(lastDurationChg).format("HH:mm:ss"));
-        console.log(moment(newDurationChg).format("HH:mm:ss"));
+        const lastDurationChg = moment(getDurationChg, "HH:mm:ss")
+        const newDurationChg = moment(chargingDuration, "HH:mm:ss")
 
-        const totalDurationChg = moment(lastDurationChg).add(newDurationChg) / 60
-        console.log(moment(totalDurationChg).format("HH:mm:ss"));
+        // parsing to string
+        const timeLastDurationChg = lastDurationChg.format("HH:mm:ss")
+        const timeNewDurationChg = newDurationChg.format("HH:mm:ss")
+        console.log(`timeLastDurationChg: ${timeLastDurationChg}`);
+        console.log(`timeNewDurationChg: ${timeNewDurationChg}`);
 
+        const resultTime = add([timeLastDurationChg, timeNewDurationChg])
+        const totalDurationChg = str(resultTime)
+        console.log(`totalDurationChg: ${totalDurationChg}`);
 
+        // json response
+        const diffChg = moment.duration(moment(totalDurationChg, "HH:mm:ss").diff(moment("00:00:00", "HH:mm:ss")));
+        const durationChg = moment.duration(diffChg, "hours");
+        const nChg = 24 * 60 * 60 * 1000;
+        const responseChargingDuration = moment.utc(durationChg % nChg).format("H [h] mm [min] ss [s]");
 
-        // // save to database
-        // const sql = `UPDATE m_frame SET duration_charging = '${chargingDuration}' WHERE frame_sn = '${req.body.frame_sn}'`;
-        // await db.query(sql, {
-        //   type: db.QueryTypes.UPDATE,
-        //   logging: false,
-        // });
+        // save to database
+        const sql = `UPDATE m_frame SET duration_charging = '${totalDurationChg}' WHERE frame_sn = '${req.body.frame_sn}'`;
+        await db.query(sql, {
+          type: db.QueryTypes.UPDATE,
+          logging: false,
+        });
+
         return res.status(200).json({
           code: 200,
           status: true,
           msg: "GET_LONG_BATTERY_CHARGING_TIME_SUCCESS",
-          data: totalDurationChg,
+          data: responseChargingDuration,
         });
       }
 
